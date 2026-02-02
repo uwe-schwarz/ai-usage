@@ -3,6 +3,7 @@ export { CodexProvider } from './codex.js';
 export { KimiProvider } from './kimi.js';
 export { ZaiProvider } from './zai.js';
 export { OpenCodeProvider } from './opencode.js';
+export { OpenCodeZenProvider } from './opencode-zen.js';
 export { GeminiProvider } from './gemini.js';
 export { OpenRouterProvider } from './openrouter.js';
 export { MiniMaxProvider } from './minimax.js';

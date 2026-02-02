@@ -1,13 +1,17 @@
 import { AuthConfig, Provider, ProviderUsage, UsageWindow } from '../types/index.js';
 
-interface MiniMaxUsageResponse {
-  data?: {
-    usage?: {
-      limit?: number;
-      used?: number;
-      remaining?: number;
-    };
-    reset_time?: string;
+interface MiniMaxRemainsResponse {
+  model_remains?: Array<{
+    model_name?: string;
+    current_interval_usage_count?: number;
+    current_interval_total_count?: number;
+    start_time?: number;
+    end_time?: number;
+    remains_time?: number;
+  }>;
+  base_resp?: {
+    status_code: number;
+    status_msg: string;
   };
 }
 
@@ -26,7 +30,8 @@ export class MiniMaxProvider implements Provider {
     }
 
     try {
-      const response = await fetch('https://api.minimax.chat/v1/usage', {
+      // Use the correct endpoint from CodexBar docs
+      const response = await fetch('https://platform.minimax.io/v1/api/openplatform/coding_plan/remains', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -37,24 +42,54 @@ export class MiniMaxProvider implements Provider {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json() as MiniMaxUsageResponse;
+      const data = await response.json() as MiniMaxRemainsResponse;
 
-      const limit = data.data?.usage?.limit || 0;
-      const used = data.data?.usage?.used || 0;
-      const remaining = data.data?.usage?.remaining || 0;
+      // Check for API error
+      if (data.base_resp && data.base_resp.status_code !== 0) {
+        throw new Error(`API error: ${data.base_resp.status_msg}`);
+      }
 
-      const primaryWindow: UsageWindow | undefined = limit > 0 ? {
-        used,
-        limit,
-        remaining,
-        utilization: (used / limit) * 100,
-        resetAt: data.data?.reset_time ? new Date(data.data.reset_time) : undefined
+      // Calculate usage from model_remains
+      let totalUsed = 0;
+      let totalLimit = 0;
+      let earliestReset: Date | undefined;
+
+      if (data.model_remains && data.model_remains.length > 0) {
+        for (const model of data.model_remains) {
+          const used = model.current_interval_usage_count || 0;
+          const total = model.current_interval_total_count || 0;
+          totalUsed += used;
+          totalLimit += total;
+          
+          // Track earliest reset time
+          if (model.remains_time) {
+            const resetDate = new Date(model.remains_time);
+            if (!earliestReset || resetDate < earliestReset) {
+              earliestReset = resetDate;
+            }
+          } else if (model.end_time) {
+            const resetDate = new Date(model.end_time);
+            if (!earliestReset || resetDate < earliestReset) {
+              earliestReset = resetDate;
+            }
+          }
+        }
+      }
+
+      const utilization = totalLimit > 0 ? (totalUsed / totalLimit) * 100 : 0;
+
+      const primaryWindow: UsageWindow | undefined = totalLimit > 0 ? {
+        used: totalUsed,
+        limit: totalLimit,
+        remaining: totalLimit - totalUsed,
+        utilization,
+        resetAt: earliestReset
       } : undefined;
 
       return {
         provider: this.displayName,
         primaryWindow,
-        additionalInfo: remaining > 0 ? `${remaining} remaining` : undefined
+        additionalInfo: data.model_remains ? `${data.model_remains.length} model(s)` : undefined
       };
     } catch (error) {
       return {
