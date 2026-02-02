@@ -9,6 +9,7 @@
 	"type": "module",
 	"scripts": {
 		"build": "tsc",
+		"postinstall": "bun run build",
 		"start": "./scripts/start.sh",
 		"dev": "tsx src/index.ts",
 		"typecheck": "tsc --noEmit",
