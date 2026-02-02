@@ -153,6 +153,28 @@ function formatSubRow(
 	return [chalk.hex(color)(fullLabel), windowText, "", "", ""];
 }
 
+function getUnsupportedProviders(auth: AuthConfig): string[] {
+	const supportedProviders = [
+		"anthropic", // Claude
+		"openai", // Codex
+		"kimi-for-coding", // Kimi
+		"zai-coding-plan", // Z.AI
+		"opencode", // OpenCode
+		"google", // Gemini CLI
+		"openrouter", // OpenRouter
+		"minimax-coding-plan", // MiniMax
+		// Antigravity is local server, not in auth config
+	];
+
+	const configuredProviders = Object.keys(auth).filter(
+		(key) => auth[key as keyof AuthConfig] !== undefined,
+	);
+
+	return configuredProviders.filter(
+		(provider) => !supportedProviders.includes(provider),
+	);
+}
+
 async function main() {
 	console.log(chalk.bold.blue("\n🔍 AI Usage Monitor\n"));
 
@@ -247,6 +269,16 @@ async function main() {
 			chalk.gray(" = using less than expected (good!)"),
 	);
 	console.log();
+
+	// Show unsupported providers
+	const unsupported = getUnsupportedProviders(auth);
+	if (unsupported.length > 0) {
+		console.log(chalk.yellow("⚠️  Not yet supported:"));
+		for (const provider of unsupported) {
+			console.log(chalk.yellow(`   • ${provider}`));
+		}
+		console.log();
+	}
 }
 
 main().catch((error) => {
