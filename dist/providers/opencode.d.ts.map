@@ -1,0 +1,1 @@
+{"version":3,"file":"opencode.d.ts","sourceRoot":"","sources":["../../src/providers/opencode.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EACX,UAAU,EACV,QAAQ,EACR,aAAa,EAEb,MAAM,mBAAmB,CAAC;AAY3B,qBAAa,gBAAiB,YAAW,QAAQ;IAChD,IAAI,SAAc;IAClB,WAAW,SAAc;IAEnB,UAAU,CAAC,IAAI,EAAE,UAAU,GAAG,OAAO,CAAC,aAAa,CAAC;CA8D1D"}

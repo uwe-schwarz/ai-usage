@@ -1,0 +1,1 @@
+{"version":3,"file":"opencode-zen.d.ts","sourceRoot":"","sources":["../../src/providers/opencode-zen.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EACX,UAAU,EACV,QAAQ,EACR,aAAa,EAEb,MAAM,mBAAmB,CAAC;AAa3B,qBAAa,mBAAoB,YAAW,QAAQ;IACnD,IAAI,SAAkB;IACtB,WAAW,SAAkB;IAEvB,UAAU,CAAC,KAAK,EAAE,UAAU,GAAG,OAAO,CAAC,aAAa,CAAC;YA2D7C,kBAAkB;YA2BlB,gBAAgB;IAa9B,OAAO,CAAC,UAAU;CAgClB"}
