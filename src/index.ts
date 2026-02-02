@@ -48,7 +48,7 @@ function createTable(): Table.Table {
       chalk.bold.white('MCP (monthly)'),
       chalk.bold.white('Pace')
     ],
-    colWidths: [18, 22, 22, 22, 18],
+    colWidths: [24, 22, 22, 22, 18],
     wordWrap: true,
     style: {
       head: [],
@@ -117,16 +117,12 @@ function formatProviderRow(usage: ProviderUsage): string[] {
 function formatSubRow(providerName: string, subRow: { label: string; window: import('./types/index.js').UsageWindow }): string[] {
   const color = getProviderColor(providerName);
   const windowText = formatWindow(subRow.window);
-  
-  // Truncate label to fit in column
-  const maxLabelLength = 14;
-  let label = subRow.label;
-  if (label.length > maxLabelLength) {
-    label = label.substring(0, maxLabelLength - 2) + '..';
-  }
-  
+
+  // For Antigravity sub-rows, stretch the name across first two columns
+  const fullLabel = `  └ ${subRow.label}`;
+
   return [
-    chalk.hex(color)(`  └ ${label}`),
+    chalk.hex(color)(fullLabel),
     windowText,
     '',
     '',
