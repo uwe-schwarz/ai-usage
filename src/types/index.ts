@@ -41,6 +41,13 @@ export interface ProviderUsage {
   plan?: string;
   additionalInfo?: string;
   error?: string;
+  // For multi-row providers (like Antigravity with multiple models)
+  subRows?: ProviderSubRow[];
+}
+
+export interface ProviderSubRow {
+  label: string;
+  window: UsageWindow;
 }
 
 export interface Provider {

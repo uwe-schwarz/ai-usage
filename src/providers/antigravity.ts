@@ -150,19 +150,38 @@ export class AntigravityProvider implements Provider {
       };
     }
 
-    // Calculate minimum remaining percentage across all models
+    // Create sub-rows for each model
+    const subRows = modelConfigs.map(config => {
+      const remainingFraction = config.quotaInfo?.remainingFraction ?? 1.0;
+      const remainingPercent = remainingFraction * 100;
+      const utilization = 100 - remainingPercent;
+
+      let resetAt: Date | undefined;
+      if (config.quotaInfo?.resetTime) {
+        resetAt = new Date(config.quotaInfo.resetTime);
+      }
+
+      return {
+        label: config.label,
+        window: {
+          used: utilization,
+          limit: 100,
+          remaining: remainingPercent,
+          utilization,
+          resetAt
+        }
+      };
+    });
+
+    // Calculate minimum remaining percentage across all models for main row
     let minRemainingPercent = 100;
-    const modelBreakdown: Record<string, number> = {};
     let earliestReset: Date | undefined;
 
     for (const config of modelConfigs) {
       const remainingFraction = config.quotaInfo?.remainingFraction ?? 1.0;
       const remainingPercent = remainingFraction * 100;
-      
-      modelBreakdown[config.label] = remainingPercent;
       minRemainingPercent = Math.min(minRemainingPercent, remainingPercent);
 
-      // Track earliest reset time
       if (config.quotaInfo?.resetTime) {
         const resetDate = new Date(config.quotaInfo.resetTime);
         if (!earliestReset || resetDate < earliestReset) {
@@ -188,7 +207,8 @@ export class AntigravityProvider implements Provider {
       provider: this.displayName,
       primaryWindow,
       plan,
-      additionalInfo: email ? `${email} (${plan})` : plan
+      additionalInfo: email ? `${email} (${plan})` : plan,
+      subRows
     };
   }
 }

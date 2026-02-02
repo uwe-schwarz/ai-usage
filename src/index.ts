@@ -114,6 +114,26 @@ function formatProviderRow(usage: ProviderUsage): string[] {
   ];
 }
 
+function formatSubRow(providerName: string, subRow: { label: string; window: import('./types/index.js').UsageWindow }): string[] {
+  const color = getProviderColor(providerName);
+  const windowText = formatWindow(subRow.window);
+  
+  // Truncate label to fit in column
+  const maxLabelLength = 14;
+  let label = subRow.label;
+  if (label.length > maxLabelLength) {
+    label = label.substring(0, maxLabelLength - 2) + '..';
+  }
+  
+  return [
+    chalk.hex(color)(`  └ ${label}`),
+    windowText,
+    '',
+    '',
+    ''
+  ];
+}
+
 async function main() {
   console.log(chalk.bold.blue('\n🔍 AI Usage Monitor\n'));
 
@@ -167,7 +187,15 @@ async function main() {
   });
   
   for (const usage of validResults) {
+    // Add main row
     table.push(formatProviderRow(usage));
+    
+    // Add sub-rows for multi-model providers (like Antigravity)
+    if (usage.subRows && usage.subRows.length > 0) {
+      for (const subRow of usage.subRows) {
+        table.push(formatSubRow(usage.provider, subRow));
+      }
+    }
   }
 
   console.log(table.toString());
