@@ -13,7 +13,9 @@ import {
   ZaiProvider,
   OpenCodeProvider,
   GeminiProvider,
-  OpenRouterProvider
+  OpenRouterProvider,
+  MiniMaxProvider,
+  AntigravityProvider
 } from './providers/index.js';
 import { formatWindow, calculatePace, getPaceColor } from './utils/formatters.js';
 
@@ -62,7 +64,9 @@ function getProviderColor(provider: string): string {
     'Z.AI': '#7C3AED',
     'OpenCode': '#6366F1',
     'Gemini CLI': '#4285F4',
-    'OpenRouter': '#FF6B6B'
+    'OpenRouter': '#FF6B6B',
+    'MiniMax': '#FF9500',
+    'Antigravity': '#00D9FF'
   };
   return colors[provider] || '#FFFFFF';
 }
@@ -127,7 +131,9 @@ async function main() {
     new ZaiProvider(),
     new OpenCodeProvider(),
     new GeminiProvider(),
-    new OpenRouterProvider()
+    new OpenRouterProvider(),
+    new MiniMaxProvider(),
+    new AntigravityProvider()
   ];
 
   console.log(chalk.gray('Fetching usage data from providers...\n'));
@@ -138,13 +144,22 @@ async function main() {
 
   const table = createTable();
   
-  // Filter out providers without auth tokens (error messages indicating missing tokens)
+  // Filter out providers without auth tokens or with API errors
   const validResults = results.filter(usage => {
     if (!usage.error) return true;
     // Don't show providers that don't have tokens configured
     if (usage.error.includes('No Anthropic token')) return false;
     if (usage.error.includes('No OpenRouter API key')) return false;
     if (usage.error.includes('No Gemini accounts found')) return false;
+    // Don't show providers with API endpoint issues (not available, in development)
+    if (usage.error.includes('API endpoint not available')) return false;
+    if (usage.error.includes('may be in development')) return false;
+    // Don't show providers with token refresh failures
+    if (usage.error.includes('Token refresh failed')) return false;
+    // Don't show providers with connection errors (MiniMax, Antigravity)
+    if (usage.error.includes('HTTP 404')) return false;
+    if (usage.error.includes('fetch failed')) return false;
+    if (usage.error.includes('ECONNREFUSED')) return false;
     return true;
   });
   

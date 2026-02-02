@@ -5,3 +5,5 @@ export { ZaiProvider } from './zai.js';
 export { OpenCodeProvider } from './opencode.js';
 export { GeminiProvider } from './gemini.js';
 export { OpenRouterProvider } from './openrouter.js';
+export { MiniMaxProvider } from './minimax.js';
+export { AntigravityProvider } from './antigravity.js';
