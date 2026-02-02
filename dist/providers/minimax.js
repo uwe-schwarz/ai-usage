@@ -26,14 +26,15 @@ export class MiniMaxProvider {
                 throw new Error(`API error: ${data.base_resp.status_msg}`);
             }
             // Calculate usage from model_remains
-            let totalUsed = 0;
+            // Note: current_interval_usage_count appears to be remaining, not used
+            let totalRemaining = 0;
             let totalLimit = 0;
             let earliestReset;
             if (data.model_remains && data.model_remains.length > 0) {
                 for (const model of data.model_remains) {
-                    const used = model.current_interval_usage_count || 0;
+                    const remaining = model.current_interval_usage_count || 0;
                     const total = model.current_interval_total_count || 0;
-                    totalUsed += used;
+                    totalRemaining += remaining;
                     totalLimit += total;
                     // Track earliest reset time
                     if (model.remains_time) {
@@ -50,12 +51,13 @@ export class MiniMaxProvider {
                     }
                 }
             }
+            const totalUsed = totalLimit - totalRemaining;
             const utilization = totalLimit > 0 ? (totalUsed / totalLimit) * 100 : 0;
             const primaryWindow = totalLimit > 0
                 ? {
                     used: totalUsed,
                     limit: totalLimit,
-                    remaining: totalLimit - totalUsed,
+                    remaining: totalRemaining,
                     utilization,
                     resetAt: earliestReset,
                 }
