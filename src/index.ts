@@ -39,7 +39,28 @@ async function loadAuthConfig(): Promise<AuthConfig> {
   throw new Error('Could not find auth.json in any standard location');
 }
 
-function createTable(): Table.Table {
+function calculateProviderColumnWidth(results: ProviderUsage[]): number {
+  const baseWidth = 18;
+  let maxLabelLength = 0;
+
+  for (const usage of results) {
+    // Check main provider name
+    maxLabelLength = Math.max(maxLabelLength, usage.provider.length);
+
+    // Check sub-row labels (for Antigravity models)
+    if (usage.subRows) {
+      for (const subRow of usage.subRows) {
+        // Add 4 for "  └ " prefix
+        maxLabelLength = Math.max(maxLabelLength, subRow.label.length + 4);
+      }
+    }
+  }
+
+  // Use the larger of base width or max label length, with some padding
+  return Math.max(baseWidth, maxLabelLength + 2);
+}
+
+function createTable(providerColWidth: number): Table.Table {
   return new Table({
     head: [
       chalk.bold.white('Provider'),
@@ -48,8 +69,8 @@ function createTable(): Table.Table {
       chalk.bold.white('MCP (monthly)'),
       chalk.bold.white('Pace')
     ],
-    colWidths: [24, 22, 22, 22, 18],
-    wordWrap: true,
+    colWidths: [providerColWidth, 22, 22, 22, 18],
+    wordWrap: false,
     style: {
       head: [],
       border: ['gray']
@@ -161,8 +182,6 @@ async function main() {
     providers.map(provider => provider.fetchUsage(auth))
   );
 
-  const table = createTable();
-  
   // Filter out providers without auth tokens or with API errors
   const validResults = results.filter(usage => {
     if (!usage.error) return true;
@@ -181,6 +200,10 @@ async function main() {
     if (usage.error.includes('ECONNREFUSED')) return false;
     return true;
   });
+
+  // Calculate dynamic column width based on content
+  const providerColWidth = calculateProviderColumnWidth(validResults);
+  const table = createTable(providerColWidth);
   
   for (const usage of validResults) {
     // Add main row
