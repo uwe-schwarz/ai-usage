@@ -64,6 +64,39 @@ export function calculatePace(
 	}
 }
 
+export function calculateMonthlyPace(
+	monthlyWindow: UsageWindow | undefined,
+): string {
+	if (!monthlyWindow || monthlyWindow.limit === 0) return "N/A";
+
+	const now = new Date();
+	const resetAt = monthlyWindow.resetAt;
+
+	if (!resetAt) {
+		const percentage = (monthlyWindow.used / monthlyWindow.limit) * 100;
+		return `mcp: ${percentage.toFixed(1)}% used`;
+	}
+
+	const timeUntilReset = resetAt.getTime() - now.getTime();
+	if (timeUntilReset <= 0) return "mcp: 0% (just reset)";
+
+	const totalMonthMs = 30 * 24 * 60 * 60 * 1000;
+	const timeElapsed = totalMonthMs - timeUntilReset;
+
+	const expectedUsage = (timeElapsed / totalMonthMs) * monthlyWindow.limit;
+	const actualUsage = monthlyWindow.used;
+	const diff = actualUsage - expectedUsage;
+	const diffPercentage = (diff / monthlyWindow.limit) * 100;
+
+	if (Math.abs(diffPercentage) < 5) {
+		return "mcp: ✓ on track";
+	} else if (diff > 0) {
+		return `mcp: ↑ ${diffPercentage.toFixed(1)}% ahead`;
+	} else {
+		return `mcp: ↓ ${Math.abs(diffPercentage).toFixed(1)}% behind`;
+	}
+}
+
 export function getPaceColor(pace: string): string {
 	// "behind" is good (green), "ahead" is bad (red)
 	if (pace.includes("✓")) return "green";

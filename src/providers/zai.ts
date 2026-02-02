@@ -74,49 +74,26 @@ export class ZaiProvider implements Provider {
 				}
 			}
 
-			const primaryLimit = tokensLimit || timeLimit;
-
 			let primaryWindow: UsageWindow | undefined;
-			if (primaryLimit) {
+			if (tokensLimit) {
 				const percentage =
-					typeof primaryLimit.percentage === "string"
-						? parseFloat(primaryLimit.percentage)
-						: primaryLimit.percentage || 0;
-				const total = primaryLimit.total || 100;
-				const used = primaryLimit.currentValue || 0;
+					typeof tokensLimit.percentage === "string"
+						? parseFloat(tokensLimit.percentage)
+						: tokensLimit.percentage || 0;
+				const total = tokensLimit.total || 100;
+				const used = tokensLimit.currentValue || 0;
 
 				primaryWindow = {
 					used,
 					limit: total,
 					remaining: total - used,
 					utilization: percentage,
-					resetAt: primaryLimit.nextResetTime
-						? parseEpochMs(primaryLimit.nextResetTime)
+					resetAt: tokensLimit.nextResetTime
+						? parseEpochMs(tokensLimit.nextResetTime)
 						: undefined,
 				};
 			}
 
-			let secondaryWindow: UsageWindow | undefined;
-			if (tokensLimit && timeLimit) {
-				const percentage =
-					typeof timeLimit.percentage === "string"
-						? parseFloat(timeLimit.percentage)
-						: timeLimit.percentage || 0;
-				const total = timeLimit.total || 100;
-				const used = timeLimit.currentValue || 0;
-
-				secondaryWindow = {
-					used,
-					limit: total,
-					remaining: total - used,
-					utilization: percentage,
-					resetAt: timeLimit.nextResetTime
-						? parseEpochMs(timeLimit.nextResetTime)
-						: undefined,
-				};
-			}
-
-			// Create MCP (TIME_LIMIT) window with hardcoded monthly reset
 			let tertiaryWindow: UsageWindow | undefined;
 			if (timeLimit) {
 				const percentage =
@@ -126,7 +103,6 @@ export class ZaiProvider implements Provider {
 				const total = timeLimit.total || 100;
 				const used = timeLimit.currentValue || 0;
 
-				// Hardcoded monthly reset (end of current month)
 				const now = new Date();
 				const endOfMonth = new Date(
 					now.getFullYear(),
@@ -149,7 +125,6 @@ export class ZaiProvider implements Provider {
 			return {
 				provider: this.displayName,
 				primaryWindow,
-				secondaryWindow,
 				tertiaryWindow,
 				plan: data.planName,
 				additionalInfo:

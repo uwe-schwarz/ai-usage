@@ -35,42 +35,23 @@ export class ZaiProvider {
                     timeLimit = limit;
                 }
             }
-            const primaryLimit = tokensLimit || timeLimit;
             let primaryWindow;
-            if (primaryLimit) {
-                const percentage = typeof primaryLimit.percentage === "string"
-                    ? parseFloat(primaryLimit.percentage)
-                    : primaryLimit.percentage || 0;
-                const total = primaryLimit.total || 100;
-                const used = primaryLimit.currentValue || 0;
+            if (tokensLimit) {
+                const percentage = typeof tokensLimit.percentage === "string"
+                    ? parseFloat(tokensLimit.percentage)
+                    : tokensLimit.percentage || 0;
+                const total = tokensLimit.total || 100;
+                const used = tokensLimit.currentValue || 0;
                 primaryWindow = {
                     used,
                     limit: total,
                     remaining: total - used,
                     utilization: percentage,
-                    resetAt: primaryLimit.nextResetTime
-                        ? parseEpochMs(primaryLimit.nextResetTime)
+                    resetAt: tokensLimit.nextResetTime
+                        ? parseEpochMs(tokensLimit.nextResetTime)
                         : undefined,
                 };
             }
-            let secondaryWindow;
-            if (tokensLimit && timeLimit) {
-                const percentage = typeof timeLimit.percentage === "string"
-                    ? parseFloat(timeLimit.percentage)
-                    : timeLimit.percentage || 0;
-                const total = timeLimit.total || 100;
-                const used = timeLimit.currentValue || 0;
-                secondaryWindow = {
-                    used,
-                    limit: total,
-                    remaining: total - used,
-                    utilization: percentage,
-                    resetAt: timeLimit.nextResetTime
-                        ? parseEpochMs(timeLimit.nextResetTime)
-                        : undefined,
-                };
-            }
-            // Create MCP (TIME_LIMIT) window with hardcoded monthly reset
             let tertiaryWindow;
             if (timeLimit) {
                 const percentage = typeof timeLimit.percentage === "string"
@@ -78,7 +59,6 @@ export class ZaiProvider {
                     : timeLimit.percentage || 0;
                 const total = timeLimit.total || 100;
                 const used = timeLimit.currentValue || 0;
-                // Hardcoded monthly reset (end of current month)
                 const now = new Date();
                 const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
                 tertiaryWindow = {
@@ -92,7 +72,6 @@ export class ZaiProvider {
             return {
                 provider: this.displayName,
                 primaryWindow,
-                secondaryWindow,
                 tertiaryWindow,
                 plan: data.planName,
                 additionalInfo: tokensLimit && timeLimit ? "Tokens + MCP (monthly)" : undefined,

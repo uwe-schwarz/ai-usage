@@ -1,26 +1,27 @@
 #!/usr/bin/env node
 
 import fs from "node:fs/promises";
-import path from "node:path";
 import os from "node:os";
+import path from "node:path";
 import chalk from "chalk";
 import Table from "cli-table3";
-import type { AuthConfig, Provider, ProviderUsage } from "./types/index.js";
 import {
+	AntigravityProvider,
 	ClaudeProvider,
 	CodexProvider,
+	GeminiProvider,
 	KimiProvider,
-	ZaiProvider,
+	MiniMaxProvider,
 	OpenCodeProvider,
 	OpenCodeZenProvider,
-	GeminiProvider,
 	OpenRouterProvider,
-	MiniMaxProvider,
-	AntigravityProvider,
+	ZaiProvider,
 } from "./providers/index.js";
+import type { AuthConfig, Provider, ProviderUsage } from "./types/index.js";
 import {
-	formatWindow,
+	calculateMonthlyPace,
 	calculatePace,
+	formatWindow,
 	getPaceColor,
 } from "./utils/formatters.js";
 
@@ -36,8 +37,7 @@ async function loadAuthConfig(): Promise<AuthConfig> {
 		try {
 			const data = await fs.readFile(configPath, "utf-8");
 			return JSON.parse(data) as AuthConfig;
-		} catch {
-		}
+		} catch {}
 	}
 
 	throw new Error("Could not find auth.json in any standard location");
@@ -73,7 +73,7 @@ function createTable(providerColWidth: number): Table.Table {
 			chalk.bold.white("MCP (monthly)"),
 			chalk.bold.white("Pace"),
 		],
-		colWidths: [providerColWidth, 22, 22, 22, 18],
+		colWidths: [providerColWidth, 22, 22, 22, 22],
 		wordWrap: false,
 		style: {
 			head: [],
@@ -119,7 +119,10 @@ function formatProviderRow(usage: ProviderUsage): string[] {
 	const fiveHourText = formatWindow(usage.primaryWindow);
 	const weeklyText = formatWindow(usage.secondaryWindow);
 	const mcpText = formatWindow(usage.tertiaryWindow);
-	const pace = calculatePace(usage.secondaryWindow, usage.primaryWindow);
+	const pace =
+		usage.provider === "Z.AI"
+			? calculateMonthlyPace(usage.tertiaryWindow)
+			: calculatePace(usage.secondaryWindow, usage.primaryWindow);
 	const paceColor = getPaceColor(pace);
 
 	const coloredPace =

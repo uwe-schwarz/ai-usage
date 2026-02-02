@@ -24,6 +24,13 @@ The `dist/` folder is committed to the repo (not gitignored) so that `bunx githu
 bun run start     # Run locally to verify it works
 ```
 
+### 4. Commit and Push
+```bash
+git add .
+git commit -m "<message>"
+git push
+```
+
 Or test with bunx:
 ```bash
 bun pm cache rm && bunx github:uwe-schwarz/ai-usage
