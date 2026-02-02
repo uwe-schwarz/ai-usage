@@ -97,12 +97,35 @@ export class ZaiProvider implements Provider {
         };
       }
 
+      // Create MCP (TIME_LIMIT) window with hardcoded monthly reset
+      let tertiaryWindow: UsageWindow | undefined;
+      if (timeLimit) {
+        const percentage = typeof timeLimit.percentage === 'string' 
+          ? parseFloat(timeLimit.percentage) 
+          : (timeLimit.percentage || 0);
+        const total = timeLimit.total || 100;
+        const used = timeLimit.currentValue || 0;
+        
+        // Hardcoded monthly reset (end of current month)
+        const now = new Date();
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        
+        tertiaryWindow = {
+          used,
+          limit: total,
+          remaining: total - used,
+          utilization: percentage,
+          resetAt: endOfMonth
+        };
+      }
+
       return {
         provider: this.displayName,
         primaryWindow,
         secondaryWindow,
+        tertiaryWindow,
         plan: data.planName,
-        additionalInfo: tokensLimit && timeLimit ? 'Tokens + Time limits' : undefined
+        additionalInfo: tokensLimit && timeLimit ? 'Tokens + MCP (monthly)' : undefined
       };
     } catch (error) {
       return {

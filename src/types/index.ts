@@ -37,6 +37,7 @@ export interface ProviderUsage {
   provider: string;
   primaryWindow?: UsageWindow;
   secondaryWindow?: UsageWindow;
+  tertiaryWindow?: UsageWindow; // For MCP limits (monthly)
   plan?: string;
   additionalInfo?: string;
   error?: string;

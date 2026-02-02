@@ -42,10 +42,10 @@ function createTable(): Table.Table {
       chalk.bold.white('Provider'),
       chalk.bold.white('5-hour window'),
       chalk.bold.white('Weekly'),
-      chalk.bold.white('Pace'),
-      chalk.bold.white('Additional Info')
+      chalk.bold.white('MCP (monthly)'),
+      chalk.bold.white('Pace')
     ],
-    colWidths: [18, 22, 22, 18, 35],
+    colWidths: [18, 22, 22, 22, 18],
     wordWrap: true,
     style: {
       head: [],
@@ -74,7 +74,7 @@ function truncate(str: string, maxLength: number): string {
 
 function formatProviderRow(usage: ProviderUsage): string[] {
   const color = getProviderColor(usage.provider);
-  
+
   if (usage.error) {
     return [
       chalk.hex(color)(usage.provider),
@@ -87,10 +87,11 @@ function formatProviderRow(usage: ProviderUsage): string[] {
 
   const fiveHourText = formatWindow(usage.primaryWindow);
   const weeklyText = formatWindow(usage.secondaryWindow);
+  const mcpText = formatWindow(usage.tertiaryWindow);
   const pace = calculatePace(usage.secondaryWindow, usage.primaryWindow);
   const paceColor = getPaceColor(pace);
 
-  const coloredPace = paceColor === 'green' 
+  const coloredPace = paceColor === 'green'
     ? chalk.green(pace)
     : paceColor === 'red'
     ? chalk.red(pace)
@@ -102,8 +103,8 @@ function formatProviderRow(usage: ProviderUsage): string[] {
     chalk.hex(color)(usage.provider),
     fiveHourText,
     weeklyText,
-    coloredPace,
-    usage.additionalInfo || ''
+    mcpText,
+    coloredPace
   ];
 }
 
@@ -137,7 +138,17 @@ async function main() {
 
   const table = createTable();
   
-  for (const usage of results) {
+  // Filter out providers without auth tokens (error messages indicating missing tokens)
+  const validResults = results.filter(usage => {
+    if (!usage.error) return true;
+    // Don't show providers that don't have tokens configured
+    if (usage.error.includes('No Anthropic token')) return false;
+    if (usage.error.includes('No OpenRouter API key')) return false;
+    if (usage.error.includes('No Gemini accounts found')) return false;
+    return true;
+  });
+  
+  for (const usage of validResults) {
     table.push(formatProviderRow(usage));
   }
 
@@ -147,10 +158,11 @@ async function main() {
   console.log(chalk.gray('Legend:'));
   console.log(chalk.gray('  • 5-hour window: Short-term rate limit usage'));
   console.log(chalk.gray('  • Weekly: Long-term usage limit'));
+  console.log(chalk.gray('  • MCP (monthly): Model Context Protocol time limits'));
   console.log(chalk.gray('  • Pace:'));
   console.log(chalk.green('    ✓ on track') + chalk.gray(' = usage matches expected pace'));
   console.log(chalk.red('    ↑ X% ahead') + chalk.gray(' = using more than expected, may run out'));
-  console.log(chalk.yellow('    ↓ X% behind') + chalk.gray(' = using less than expected'));
+  console.log(chalk.green('    ↓ X% behind') + chalk.gray(' = using less than expected (good!)'));
   console.log();
 }
 

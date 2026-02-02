@@ -65,9 +65,10 @@ export function calculatePace(
 }
 
 export function getPaceColor(pace: string): string {
+  // "behind" is good (green), "ahead" is bad (red)
   if (pace.includes('✓')) return 'green';
-  if (pace.includes('↑')) return 'red';
-  if (pace.includes('↓')) return 'yellow';
+  if (pace.includes('↑')) return 'red';  // ahead = using more than expected
+  if (pace.includes('↓')) return 'green'; // behind = using less than expected (good!)
   return 'white';
 }
 
