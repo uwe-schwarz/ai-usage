@@ -109,6 +109,8 @@ export class AntigravityProvider implements Provider {
         rejectUnauthorized: false // Allow self-signed certificates
       };
 
+      const TIMEOUT_MS = 30_000;
+
       const req = https.request(options, (res) => {
         let data = '';
         res.on('data', (chunk) => { data += chunk; });
@@ -120,6 +122,10 @@ export class AntigravityProvider implements Provider {
             reject(new Error('Invalid response format'));
           }
         });
+      });
+
+      req.setTimeout(TIMEOUT_MS, () => {
+        req.destroy(new Error('Request timed out'));
       });
 
       req.on('error', (err) => {
