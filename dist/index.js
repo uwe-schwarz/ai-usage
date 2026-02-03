@@ -157,7 +157,8 @@ async function main() {
     console.log(chalk.gray("Fetching usage data from providers...\n"));
     const results = await Promise.all(providers.map((provider) => provider.fetchUsage(auth)));
     // Filter out providers without auth tokens or with API errors
-    const validResults = results.filter((usage) => {
+    const validResults = results
+        .filter((usage) => {
         if (!usage.error)
             return true;
         // Don't show providers that don't have tokens configured
@@ -183,7 +184,8 @@ async function main() {
         if (usage.error.includes("ECONNREFUSED"))
             return false;
         return true;
-    });
+    })
+        .sort((a, b) => a.provider.localeCompare(b.provider));
     // Calculate dynamic column width based on content
     const providerColWidth = calculateProviderColumnWidth(validResults);
     const table = createTable(providerColWidth);

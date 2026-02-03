@@ -215,23 +215,25 @@ async function main() {
 	);
 
 	// Filter out providers without auth tokens or with API errors
-	const validResults = results.filter((usage) => {
-		if (!usage.error) return true;
-		// Don't show providers that don't have tokens configured
-		if (usage.error.includes("No Anthropic token")) return false;
-		if (usage.error.includes("No OpenRouter API key")) return false;
-		if (usage.error.includes("No Gemini accounts found")) return false;
-		// Don't show providers with API endpoint issues (not available, in development)
-		if (usage.error.includes("API endpoint not available")) return false;
-		if (usage.error.includes("may be in development")) return false;
-		// Don't show providers with token refresh failures
-		if (usage.error.includes("Token refresh failed")) return false;
-		// Don't show providers with connection errors (MiniMax, Antigravity)
-		if (usage.error.includes("HTTP 404")) return false;
-		if (usage.error.includes("fetch failed")) return false;
-		if (usage.error.includes("ECONNREFUSED")) return false;
-		return true;
-	});
+	const validResults = results
+		.filter((usage) => {
+			if (!usage.error) return true;
+			// Don't show providers that don't have tokens configured
+			if (usage.error.includes("No Anthropic token")) return false;
+			if (usage.error.includes("No OpenRouter API key")) return false;
+			if (usage.error.includes("No Gemini accounts found")) return false;
+			// Don't show providers with API endpoint issues (not available, in development)
+			if (usage.error.includes("API endpoint not available")) return false;
+			if (usage.error.includes("may be in development")) return false;
+			// Don't show providers with token refresh failures
+			if (usage.error.includes("Token refresh failed")) return false;
+			// Don't show providers with connection errors (MiniMax, Antigravity)
+			if (usage.error.includes("HTTP 404")) return false;
+			if (usage.error.includes("fetch failed")) return false;
+			if (usage.error.includes("ECONNREFUSED")) return false;
+			return true;
+		})
+		.sort((a, b) => a.provider.localeCompare(b.provider));
 
 	// Calculate dynamic column width based on content
 	const providerColWidth = calculateProviderColumnWidth(validResults);
