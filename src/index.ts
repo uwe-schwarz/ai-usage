@@ -167,6 +167,12 @@ function formatSubRow(
 	return [chalk.hex(color)(fullLabel), windowText, "", "", ""];
 }
 
+/**
+ * Identify provider keys present in an AuthConfig that are not part of the officially supported provider list.
+ *
+ * @param auth - The parsed auth configuration object; keys with `undefined` values are treated as absent.
+ * @returns The configured provider keys from `auth` that are not recognized as supported providers.
+ */
 function getUnsupportedProviders(auth: AuthConfig): string[] {
 	const supportedProviders = [
 		"anthropic", // Claude
@@ -189,6 +195,11 @@ function getUnsupportedProviders(auth: AuthConfig): string[] {
 	);
 }
 
+/**
+ * Print the CLI help banner, usage instructions, available options, and examples to stdout.
+ *
+ * Includes a short note explaining the Antigravity display behavior and the --show-antigravity flag.
+ */
 function printHelp(): void {
 	console.log(chalk.bold.blue("\n🔍 AI Usage Monitor\n"));
 	console.log("Monitor AI provider usage limits from opencode config.\n");
@@ -214,6 +225,11 @@ function printHelp(): void {
 	console.log("  individual model details.\n");
 }
 
+/**
+ * Parse command-line arguments to determine whether to display Antigravity sub-rows and whether help was requested.
+ *
+ * @returns An object where `showAntigravityDetails` is `true` if `--show-antigravity` is present (otherwise `false`), and `showHelp` is `true` if `--help` or `-h` is present (otherwise `false`).
+ */
 function parseArgs(): { showAntigravityDetails: boolean; showHelp: boolean } {
 	const args = process.argv.slice(2);
 	const showAntigravityDetails = args.includes("--show-antigravity");
@@ -221,6 +237,15 @@ function parseArgs(): { showAntigravityDetails: boolean; showHelp: boolean } {
 	return { showAntigravityDetails, showHelp: showHelpFlag };
 }
 
+/**
+ * Run the CLI: load auth configuration, fetch usage from providers, and render a usage table to stdout.
+ *
+ * Loads the auth.json from standard locations, instantiates provider clients, retrieves usage data,
+ * filters and sorts results, and prints a formatted table with pace indicators and a legend.
+ * Honors CLI flags (help and --show-antigravity) — printing help and exiting when requested,
+ * and showing Antigravity sub-rows only when the flag is provided. Exits the process with code 1
+ * if auth loading fails. Outputs status and error messages to stdout/stderr.
+ */
 async function main() {
 	const { showAntigravityDetails, showHelp } = parseArgs();
 
