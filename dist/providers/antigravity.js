@@ -156,12 +156,15 @@ export class AntigravityProvider {
             };
         })
             .sort((a, b) => a.label.localeCompare(b.label));
+        // Calculate min and max utilization across all models
         let minRemainingPercent = 100;
+        let maxRemainingPercent = 100;
         let earliestReset;
         for (const model of models) {
             const remainingFraction = model.remainingFraction ?? 1.0;
             const remainingPercent = remainingFraction * 100;
             minRemainingPercent = Math.min(minRemainingPercent, remainingPercent);
+            maxRemainingPercent = Math.max(maxRemainingPercent, remainingPercent);
             if (model.resetTime) {
                 const resetDate = this.parseResetTime(model.resetTime);
                 if (!earliestReset || (resetDate && resetDate < earliestReset)) {
@@ -169,13 +172,17 @@ export class AntigravityProvider {
                 }
             }
         }
-        const utilization = 100 - minRemainingPercent;
+        const minUtilization = 100 - maxRemainingPercent;
+        const maxUtilization = 100 - minRemainingPercent;
         const primaryWindow = {
-            used: utilization,
+            used: maxUtilization, // Use max as the "used" value
             limit: 100,
             remaining: minRemainingPercent,
-            utilization,
+            utilization: maxUtilization,
             resetAt: earliestReset,
+            // Store range info for display
+            minUtilization,
+            maxUtilization,
         };
         return {
             provider: this.displayName,

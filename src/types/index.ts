@@ -32,6 +32,9 @@ export interface UsageWindow {
 	utilization: number;
 	resetAt?: Date;
 	resetInSeconds?: number;
+	// For displaying ranges (e.g., Antigravity model utilization range)
+	minUtilization?: number;
+	maxUtilization?: number;
 }
 
 export type ErrorCode =

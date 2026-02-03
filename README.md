@@ -9,6 +9,22 @@ bun install
 bun run start
 ```
 
+### CLI Options
+
+```
+ai-usage-monitor [options]
+
+Options:
+  --help, -h              Show help message
+  --show-antigravity      Show individual Antigravity model details
+
+Examples:
+  ai-usage-monitor                    # Show summary view
+  ai-usage-monitor --show-antigravity # Show all Antigravity models
+```
+
+**Antigravity display:** By default, Antigravity shows a range (e.g., `5%-88%`) when models have different utilization levels. Use `--show-antigravity` to see individual model details.
+
 ## Supported Providers
 
 - **Claude** (Anthropic) - OAuth API
@@ -72,7 +88,8 @@ Legend:
 ## Features
 
 - **Dynamic column width** - Provider column automatically adjusts to fit the longest name
-- **Multi-model support** - Antigravity shows individual model quotas
+- **Multi-model support** - Antigravity shows individual model quotas (use `--show-antigravity`)
+- **Smart Antigravity display** - Shows utilization range by default, detailed view with flag
 - **5-hour and weekly windows** - Short and long-term usage tracking with reset timers
 - **Model Context Protocol (MCP) - monthly limits** - Shows MCP time limits for Z.AI
 - **Usage pace calculation** - Shows if you're on track, ahead, or behind expected usage
