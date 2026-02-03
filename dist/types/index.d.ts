@@ -9,6 +9,7 @@ export interface AuthConfig {
     anthropic?: OAuthConfig;
     github?: OAuthConfig;
     openrouter?: ApiConfig;
+    antigravity?: OAuthConfig;
 }
 export interface OAuthConfig {
     type: "oauth";

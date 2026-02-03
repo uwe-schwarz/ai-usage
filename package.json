@@ -1,6 +1,6 @@
 {
 	"name": "ai-usage-monitor",
-	"version": "1.0.0",
+	"version": "0.3.0",
 	"description": "Monitor AI provider usage limits from opencode config",
 	"main": "dist/index.js",
 	"bin": "dist/index.js",

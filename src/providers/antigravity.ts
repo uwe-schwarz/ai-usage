@@ -4,31 +4,36 @@ import type {
 	ProviderUsage,
 	UsageWindow,
 } from "../types/index.js";
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
-import https from "node:https";
+import {
+	getActiveAntigravityAccount,
+	refreshAntigravityToken,
+} from "../utils/antigravity-accounts.js";
 
-const execAsync = promisify(exec);
+const CLOUDCODE_BASE_URLS = [
+	"https://daily-cloudcode-pa.googleapis.com",
+	"https://cloudcode-pa.googleapis.com",
+	"https://daily-cloudcode-pa.sandbox.googleapis.com",
+];
 
-interface AntigravityModelConfig {
-	label: string;
+const FETCH_AVAILABLE_MODELS_PATH = "/v1internal:fetchAvailableModels";
+
+interface CloudCodeModelData {
+	displayName?: string;
+	model?: string;
 	quotaInfo?: {
 		remainingFraction?: number;
 		resetTime?: string;
 	};
 }
 
-interface AntigravityUserStatus {
-	email?: string;
-	userTier?: { name?: string };
-	planStatus?: { planInfo?: { planDisplayName?: string } };
-	cascadeModelConfigData?: {
-		clientModelConfigs?: AntigravityModelConfig[];
-	};
+interface CloudCodeQuotaResponse {
+	models?: Record<string, CloudCodeModelData>;
 }
 
-interface AntigravityResponse {
-	userStatus?: AntigravityUserStatus;
+interface CloudCodeModelQuota {
+	label: string;
+	remainingFraction?: number;
+	resetTime?: string;
 }
 
 export class AntigravityProvider implements Provider {
@@ -36,157 +41,170 @@ export class AntigravityProvider implements Provider {
 	displayName = "Antigravity";
 
 	async fetchUsage(_auth: AuthConfig): Promise<ProviderUsage> {
+		const account = await getActiveAntigravityAccount();
+		if (!account) {
+			return {
+				provider: this.displayName,
+				error: "No Antigravity account found in antigravity-accounts.json",
+			};
+		}
+
+		let accessToken: string;
+		const expiresAt = _auth.antigravity?.expires;
+
+		if (expiresAt && expiresAt > Date.now()) {
+			if (!_auth.antigravity?.access) {
+				return {
+					provider: this.displayName,
+					error:
+						"Antigravity access token expired and no refresh token available",
+				};
+			}
+			accessToken = _auth.antigravity.access;
+		} else {
+			if (!_auth.antigravity?.refresh) {
+				try {
+					const refreshResult = await refreshAntigravityToken(
+						account.refreshToken,
+					);
+					accessToken = refreshResult.accessToken;
+				} catch (error) {
+					return {
+						provider: this.displayName,
+						error:
+							error instanceof Error && error.message === "invalid_grant"
+								? "Antigravity refresh token invalid. Please re-authorize."
+								: `Failed to refresh token: ${error instanceof Error ? error.message : "Unknown error"}`,
+					};
+				}
+			} else {
+				try {
+					const refreshResult = await refreshAntigravityToken(
+						_auth.antigravity.refresh,
+					);
+					accessToken = refreshResult.accessToken;
+				} catch (error) {
+					return {
+						provider: this.displayName,
+						error:
+							error instanceof Error && error.message === "invalid_grant"
+								? "Antigravity refresh token invalid. Please re-authorize."
+								: `Failed to refresh token: ${error instanceof Error ? error.message : "Unknown error"}`,
+					};
+				}
+			}
+		}
+
 		try {
-			// Step 1: Find language_server_macos process
-			const { stdout: psOutput } = await execAsync("ps -ax -o pid=,command=");
-			const processLine = psOutput
-				.split("\n")
-				.find(
-					(line) =>
-						line.includes("language_server_macos") &&
-						line.includes("antigravity") &&
-						!line.includes("grep"),
-				);
-
-			if (!processLine) {
-				return {
-					provider: this.displayName,
-					error: "Antigravity not running",
-				};
-			}
-
-			// Extract PID and CSRF token
-			const components = processLine.trim().split(/\s+/);
-			const pid = parseInt(components[0], 10);
-
-			const csrfMatch = processLine.match(/--csrf_token[= ]+([a-zA-Z0-9-]+)/);
-			if (!csrfMatch) {
-				return {
-					provider: this.displayName,
-					error: "Cannot extract CSRF token",
-				};
-			}
-			const csrfToken = csrfMatch[1];
-
-			// Step 2: Find listening port
-			const { stdout: lsofOutput } = await execAsync(
-				`lsof -nP -iTCP -sTCP:LISTEN -a -p ${pid}`,
-			);
-			const portMatch = lsofOutput.match(
-				/(?:\*|127\.0\.0\.1):(\d+) \(LISTEN\)/,
-			);
-			if (!portMatch) {
-				return {
-					provider: this.displayName,
-					error: "Cannot find listening port",
-				};
-			}
-			const port = parseInt(portMatch[1], 10);
-
-			// Step 3: Make HTTPS request to local server
-			const response = await this.makeRequest(port, csrfToken);
-
-			// Step 4: Parse response
-			return this.parseResponse(response);
+			const quota = await this.fetchQuota(accessToken, account.projectId);
+			return this.parseResponse(quota, account.email);
 		} catch (error) {
 			return {
 				provider: this.displayName,
-				error: error instanceof Error ? error.message : "Unknown error",
+				error: error instanceof Error ? error.message : "Failed to fetch quota",
 			};
 		}
 	}
 
-	private async makeRequest(
-		port: number,
-		csrfToken: string,
-	): Promise<AntigravityResponse> {
-		return new Promise((resolve, reject) => {
-			const requestBody = JSON.stringify({
-				metadata: {
-					ideName: "antigravity",
-					extensionName: "antigravity",
-					ideVersion: "unknown",
-					locale: "en",
-				},
-			});
+	private async fetchQuota(
+		accessToken: string,
+		projectId?: string,
+	): Promise<CloudCodeModelQuota[]> {
+		let lastError: Error | undefined;
 
-			const options = {
-				hostname: "127.0.0.1",
-				port,
-				path: "/exa.language_server_pb.LanguageServerService/GetUserStatus",
-				method: "POST",
-				headers: {
-					"X-Codeium-Csrf-Token": csrfToken,
-					"Connect-Protocol-Version": "1",
-					"Content-Type": "application/json",
-					"Content-Length": Buffer.byteLength(requestBody),
-				},
-				rejectUnauthorized: false, // Allow self-signed certificates
-			};
+		for (const baseUrl of CLOUDCODE_BASE_URLS) {
+			try {
+				return await this.fetchQuotaFromEndpoint(
+					baseUrl,
+					accessToken,
+					projectId,
+				);
+			} catch (error) {
+				lastError = error instanceof Error ? error : new Error(String(error));
+			}
+		}
 
-			const TIMEOUT_MS = 30_000;
+		throw lastError ?? new Error("All Cloud Code endpoints failed");
+	}
 
-			const req = https.request(options, (res) => {
-				let data = "";
-				res.on("data", (chunk) => {
-					data += chunk;
-				});
-				res.on("end", () => {
-					try {
-						const response = JSON.parse(data) as AntigravityResponse;
-						resolve(response);
-					} catch (_e) {
-						reject(new Error("Invalid response format"));
-					}
-				});
-			});
+	private async fetchQuotaFromEndpoint(
+		baseUrl: string,
+		accessToken: string,
+		projectId?: string,
+	): Promise<CloudCodeModelQuota[]> {
+		const urlString = baseUrl + FETCH_AVAILABLE_MODELS_PATH;
+		const url = new URL(urlString);
 
-			req.setTimeout(TIMEOUT_MS, () => {
-				req.destroy(new Error("Request timed out"));
-			});
+		const body: Record<string, unknown> = {};
+		if (projectId) {
+			body.project = projectId;
+		}
 
-			req.on("error", (err) => {
-				reject(err);
-			});
-
-			req.write(requestBody);
-			req.end();
+		const response = await fetch(url.toString(), {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${accessToken}`,
+				"User-Agent": "antigravity",
+			},
+			body: JSON.stringify(body),
 		});
-	}
 
-	private parseResponse(response: AntigravityResponse): ProviderUsage {
-		const userStatus = response.userStatus;
-
-		if (!userStatus) {
-			return {
-				provider: this.displayName,
-				error: "Missing userStatus in response",
-			};
+		if (response.status === 401 || response.status === 403) {
+			throw new Error("invalid_grant");
 		}
 
-		const modelConfigs =
-			userStatus.cascadeModelConfigData?.clientModelConfigs || [];
+		if (!response.ok) {
+			const errorBody = await response.text();
+			throw new Error(`HTTP ${response.status}: ${errorBody}`);
+		}
 
-		if (modelConfigs.length === 0) {
+		const data = (await response.json()) as CloudCodeQuotaResponse;
+		return this.parseQuotaResponse(data);
+	}
+
+	private parseQuotaResponse(
+		data: CloudCodeQuotaResponse,
+	): CloudCodeModelQuota[] {
+		const models: CloudCodeModelQuota[] = [];
+
+		if (data.models) {
+			for (const [key, modelData] of Object.entries(data.models)) {
+				const displayName = modelData.displayName ?? key;
+				models.push({
+					label: displayName,
+					remainingFraction: modelData.quotaInfo?.remainingFraction,
+					resetTime: modelData.quotaInfo?.resetTime,
+				});
+			}
+		}
+
+		return models;
+	}
+
+	private parseResponse(
+		models: CloudCodeModelQuota[],
+		email?: string,
+	): ProviderUsage {
+		if (models.length === 0) {
 			return {
 				provider: this.displayName,
 				error: "No model configs found",
 			};
 		}
 
-		// Create sub-rows for each model
-		const subRows = modelConfigs.map((config) => {
-			const remainingFraction = config.quotaInfo?.remainingFraction ?? 1.0;
+		const subRows = models.map((model) => {
+			const remainingFraction = model.remainingFraction ?? 1.0;
 			const remainingPercent = remainingFraction * 100;
 			const utilization = 100 - remainingPercent;
 
 			let resetAt: Date | undefined;
-			if (config.quotaInfo?.resetTime) {
-				resetAt = new Date(config.quotaInfo.resetTime);
+			if (model.resetTime) {
+				resetAt = this.parseResetTime(model.resetTime);
 			}
 
 			return {
-				label: config.label,
+				label: model.label,
 				window: {
 					used: utilization,
 					limit: 100,
@@ -197,18 +215,17 @@ export class AntigravityProvider implements Provider {
 			};
 		});
 
-		// Calculate minimum remaining percentage across all models for main row
 		let minRemainingPercent = 100;
 		let earliestReset: Date | undefined;
 
-		for (const config of modelConfigs) {
-			const remainingFraction = config.quotaInfo?.remainingFraction ?? 1.0;
+		for (const model of models) {
+			const remainingFraction = model.remainingFraction ?? 1.0;
 			const remainingPercent = remainingFraction * 100;
 			minRemainingPercent = Math.min(minRemainingPercent, remainingPercent);
 
-			if (config.quotaInfo?.resetTime) {
-				const resetDate = new Date(config.quotaInfo.resetTime);
-				if (!earliestReset || resetDate < earliestReset) {
+			if (model.resetTime) {
+				const resetDate = this.parseResetTime(model.resetTime);
+				if (!earliestReset || (resetDate && resetDate < earliestReset)) {
 					earliestReset = resetDate;
 				}
 			}
@@ -224,18 +241,25 @@ export class AntigravityProvider implements Provider {
 			resetAt: earliestReset,
 		};
 
-		const plan =
-			userStatus.userTier?.name ||
-			userStatus.planStatus?.planInfo?.planDisplayName ||
-			"unknown";
-		const email = userStatus.email;
-
 		return {
 			provider: this.displayName,
 			primaryWindow,
-			plan,
-			additionalInfo: email ? `${email} (${plan})` : plan,
+			additionalInfo: email ?? undefined,
 			subRows,
 		};
+	}
+
+	private parseResetTime(resetTime: string): Date | undefined {
+		const date = new Date(resetTime);
+		if (!Number.isNaN(date.getTime())) {
+			return date;
+		}
+
+		const epochSeconds = parseFloat(resetTime);
+		if (!Number.isNaN(epochSeconds)) {
+			return new Date(epochSeconds * 1000);
+		}
+
+		return undefined;
 	}
 }
