@@ -20,7 +20,7 @@ bun run start
 - **Gemini CLI** - Google Gemini usage
 - **OpenRouter** - OpenRouter credits
 - **MiniMax** - MiniMax coding plan
-- **Antigravity** - Local language server with per-model quotas
+- **Antigravity** - Google Cloud Code API with per-model quotas (OAuth)
 
 ## Example Output
 
@@ -74,7 +74,7 @@ Legend:
 - **Dynamic column width** - Provider column automatically adjusts to fit the longest name
 - **Multi-model support** - Antigravity shows individual model quotas
 - **5-hour and weekly windows** - Short and long-term usage tracking with reset timers
-- **Model Context Protocol (MCP) — monthly limits** - Shows MCP time limits for Z.AI
+- **Model Context Protocol (MCP) - monthly limits** - Shows MCP time limits for Z.AI
 - **Usage pace calculation** - Shows if you're on track, ahead, or behind expected usage
 - **Color-coded output** - Green for "behind" (good), red for "ahead" (warning)
 - **Auto-discovers tokens** - Reads from `~/.local/share/opencode/auth.json`
@@ -92,8 +92,7 @@ To add a new provider:
 
 ### Provider Types
 
-- **OAuth-based**: Claude, Codex (uses access tokens)
-- **API Key-based**: Kimi, Z.AI, MiniMax, OpenRouter
+- **OAuth-based**: Claude, Codex, Antigravity (uses access tokens)
+- **API Key-based**: Kimi, Z.AI, MiniMax, OpenRouter, OpenCode
 - **CLI-based**: OpenCode Zen (uses local `opencode` binary)
-- **Local server**: Antigravity (connects to localhost language server) - **Note: Only works on macOS/Linux** (uses POSIX commands `ps` and `lsof`)
 - **Cookie-based**: Gemini CLI (reads browser cookies)
