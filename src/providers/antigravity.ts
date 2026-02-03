@@ -193,27 +193,29 @@ export class AntigravityProvider implements Provider {
 			};
 		}
 
-		const subRows = models.map((model) => {
-			const remainingFraction = model.remainingFraction ?? 1.0;
-			const remainingPercent = remainingFraction * 100;
-			const utilization = 100 - remainingPercent;
+		const subRows = models
+			.map((model) => {
+				const remainingFraction = model.remainingFraction ?? 1.0;
+				const remainingPercent = remainingFraction * 100;
+				const utilization = 100 - remainingPercent;
 
-			let resetAt: Date | undefined;
-			if (model.resetTime) {
-				resetAt = this.parseResetTime(model.resetTime);
-			}
+				let resetAt: Date | undefined;
+				if (model.resetTime) {
+					resetAt = this.parseResetTime(model.resetTime);
+				}
 
-			return {
-				label: model.label,
-				window: {
-					used: utilization,
-					limit: 100,
-					remaining: remainingPercent,
-					utilization,
-					resetAt,
-				},
-			};
-		});
+				return {
+					label: model.label,
+					window: {
+						used: utilization,
+						limit: 100,
+						remaining: remainingPercent,
+						utilization,
+						resetAt,
+					},
+				};
+			})
+			.sort((a, b) => a.label.localeCompare(b.label));
 
 		let minRemainingPercent = 100;
 		let earliestReset: Date | undefined;

@@ -127,7 +127,8 @@ export class AntigravityProvider {
                 error: "No model configs found",
             };
         }
-        const subRows = models.map((model) => {
+        const subRows = models
+            .map((model) => {
             const remainingFraction = model.remainingFraction ?? 1.0;
             const remainingPercent = remainingFraction * 100;
             const utilization = 100 - remainingPercent;
@@ -145,7 +146,8 @@ export class AntigravityProvider {
                     resetAt,
                 },
             };
-        });
+        })
+            .sort((a, b) => a.label.localeCompare(b.label));
         let minRemainingPercent = 100;
         let earliestReset;
         for (const model of models) {
