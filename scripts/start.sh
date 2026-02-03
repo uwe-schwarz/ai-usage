@@ -7,4 +7,4 @@ if [ ! -d "dist" ] || [ -n "$(find src -newer dist -type f 2>/dev/null | head -1
 	bun run build
 fi
 
-node dist/index.js
+bun dist/index.js

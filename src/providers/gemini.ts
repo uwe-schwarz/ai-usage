@@ -142,12 +142,15 @@ export class GeminiProvider implements Provider {
 				}
 			}
 			return [];
-		} catch {
+		} catch (error) {
+			console.debug("Failed to load Gemini config:", error);
 			return [];
 		}
 	}
 
 	private async refreshToken(refreshToken: string): Promise<string> {
+		// These are public OAuth client credentials for the Gemini CLI application
+		// They are safe to include in source code as they identify the app, not the user
 		const response = await fetch("https://oauth2.googleapis.com/token", {
 			method: "POST",
 			headers: {

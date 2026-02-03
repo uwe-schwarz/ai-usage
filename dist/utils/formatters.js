@@ -68,7 +68,11 @@ export function calculateMonthlyPace(monthlyWindow) {
         return "mcp: 0% (just reset)";
     const totalMonthMs = 30 * 24 * 60 * 60 * 1000;
     const timeElapsed = totalMonthMs - timeUntilReset;
-    const expectedUsage = (timeElapsed / totalMonthMs) * monthlyWindow.limit;
+    // Guard against negative or out-of-range timeElapsed
+    const clampedTimeElapsed = Math.max(0, Math.min(timeElapsed, totalMonthMs));
+    if (clampedTimeElapsed <= 0)
+        return "mcp: 0% (just reset)";
+    const expectedUsage = (clampedTimeElapsed / totalMonthMs) * monthlyWindow.limit;
     const actualUsage = monthlyWindow.used;
     const diff = actualUsage - expectedUsage;
     const diffPercentage = (diff / monthlyWindow.limit) * 100;

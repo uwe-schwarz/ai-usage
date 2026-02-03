@@ -34,6 +34,16 @@ export interface UsageWindow {
 	resetInSeconds?: number;
 }
 
+export type ErrorCode =
+	| "NO_ANTHROPIC_TOKEN"
+	| "NO_OPENROUTER_KEY"
+	| "NO_GEMINI_ACCOUNTS"
+	| "API_ENDPOINT_UNAVAILABLE"
+	| "TOKEN_REFRESH_FAILED"
+	| "HTTP_NOT_FOUND"
+	| "CONNECTION_REFUSED"
+	| "FETCH_FAILED";
+
 export interface ProviderUsage {
 	provider: string;
 	primaryWindow?: UsageWindow;
@@ -42,6 +52,7 @@ export interface ProviderUsage {
 	plan?: string;
 	additionalInfo?: string;
 	error?: string;
+	errorCode?: ErrorCode;
 	// For multi-row providers (like Antigravity with multiple models)
 	subRows?: ProviderSubRow[];
 }

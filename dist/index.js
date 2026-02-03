@@ -16,7 +16,8 @@ async function loadAuthConfig() {
     for (const configPath of possiblePaths) {
         try {
             const data = await fs.readFile(configPath, "utf-8");
-            return JSON.parse(data);
+            const config = JSON.parse(data);
+            return { config, path: configPath };
         }
         catch { }
     }
@@ -134,9 +135,12 @@ function getUnsupportedProviders(auth) {
 async function main() {
     console.log(chalk.bold.blue("\n🔍 AI Usage Monitor\n"));
     let auth;
+    let authPath;
     try {
-        auth = await loadAuthConfig();
-        console.log(chalk.gray(`Loaded auth config from ~/.local/share/opencode/auth.json\n`));
+        const result = await loadAuthConfig();
+        auth = result.config;
+        authPath = result.path;
+        console.log(chalk.gray(`Loaded auth config from ${authPath}\n`));
     }
     catch (error) {
         console.error(chalk.red("Error loading auth config:"), error instanceof Error ? error.message : error);
@@ -156,27 +160,39 @@ async function main() {
     ];
     console.log(chalk.gray("Fetching usage data from providers...\n"));
     const results = await Promise.all(providers.map((provider) => provider.fetchUsage(auth)));
+    // Error codes for filtering providers
+    const HIDDEN_ERROR_CODES = [
+        "NO_ANTHROPIC_TOKEN",
+        "NO_OPENROUTER_KEY",
+        "NO_GEMINI_ACCOUNTS",
+        "API_ENDPOINT_UNAVAILABLE",
+        "TOKEN_REFRESH_FAILED",
+        "HTTP_NOT_FOUND",
+        "CONNECTION_REFUSED",
+        "FETCH_FAILED",
+    ];
     // Filter out providers without auth tokens or with API errors
     const validResults = results
         .filter((usage) => {
         if (!usage.error)
             return true;
-        // Don't show providers that don't have tokens configured
+        // Check for standardized error codes first
+        if (usage.errorCode && HIDDEN_ERROR_CODES.includes(usage.errorCode)) {
+            return false;
+        }
+        // Fallback to message substring checks for backward compatibility
         if (usage.error.includes("No Anthropic token"))
             return false;
         if (usage.error.includes("No OpenRouter API key"))
             return false;
         if (usage.error.includes("No Gemini accounts found"))
             return false;
-        // Don't show providers with API endpoint issues (not available, in development)
         if (usage.error.includes("API endpoint not available"))
             return false;
         if (usage.error.includes("may be in development"))
             return false;
-        // Don't show providers with token refresh failures
         if (usage.error.includes("Token refresh failed"))
             return false;
-        // Don't show providers with connection errors (MiniMax, Antigravity)
         if (usage.error.includes("HTTP 404"))
             return false;
         if (usage.error.includes("fetch failed"))

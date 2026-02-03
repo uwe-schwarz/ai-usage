@@ -19,15 +19,19 @@ export class AntigravityProvider {
         let accessToken;
         const expiresAt = _auth.antigravity?.expires;
         if (expiresAt && expiresAt > Date.now()) {
-            if (!_auth.antigravity?.access) {
+            // Token is still valid - use cached access token if available
+            if (_auth.antigravity?.access) {
+                accessToken = _auth.antigravity.access;
+            }
+            else {
                 return {
                     provider: this.displayName,
-                    error: "Antigravity access token expired and no refresh token available",
+                    error: "Antigravity access token missing",
                 };
             }
-            accessToken = _auth.antigravity.access;
         }
         else {
+            // Token is expired - try to refresh
             if (!_auth.antigravity?.refresh) {
                 try {
                     const refreshResult = await refreshAntigravityToken(account.refreshToken);
@@ -96,8 +100,12 @@ export class AntigravityProvider {
             },
             body: JSON.stringify(body),
         });
-        if (response.status === 401 || response.status === 403) {
+        if (response.status === 401) {
             throw new Error("invalid_grant");
+        }
+        if (response.status === 403) {
+            const errorBody = await response.text();
+            throw new Error(`forbidden: ${response.statusText} - ${errorBody}`);
         }
         if (!response.ok) {
             const errorBody = await response.text();

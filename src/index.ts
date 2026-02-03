@@ -17,7 +17,12 @@ import {
 	OpenRouterProvider,
 	ZaiProvider,
 } from "./providers/index.js";
-import type { AuthConfig, Provider, ProviderUsage } from "./types/index.js";
+import type {
+	AuthConfig,
+	ErrorCode,
+	Provider,
+	ProviderUsage,
+} from "./types/index.js";
 import {
 	calculateMonthlyPace,
 	calculatePace,
@@ -25,7 +30,12 @@ import {
 	getPaceColor,
 } from "./utils/formatters.js";
 
-async function loadAuthConfig(): Promise<AuthConfig> {
+interface AuthConfigResult {
+	config: AuthConfig;
+	path: string;
+}
+
+async function loadAuthConfig(): Promise<AuthConfigResult> {
 	const possiblePaths = [
 		process.env.XDG_DATA_HOME &&
 			path.join(process.env.XDG_DATA_HOME, "opencode/auth.json"),
@@ -36,7 +46,8 @@ async function loadAuthConfig(): Promise<AuthConfig> {
 	for (const configPath of possiblePaths) {
 		try {
 			const data = await fs.readFile(configPath, "utf-8");
-			return JSON.parse(data) as AuthConfig;
+			const config = JSON.parse(data) as AuthConfig;
+			return { config, path: configPath };
 		} catch {}
 	}
 
@@ -182,11 +193,12 @@ async function main() {
 	console.log(chalk.bold.blue("\n🔍 AI Usage Monitor\n"));
 
 	let auth: AuthConfig;
+	let authPath: string;
 	try {
-		auth = await loadAuthConfig();
-		console.log(
-			chalk.gray(`Loaded auth config from ~/.local/share/opencode/auth.json\n`),
-		);
+		const result = await loadAuthConfig();
+		auth = result.config;
+		authPath = result.path;
+		console.log(chalk.gray(`Loaded auth config from ${authPath}\n`));
 	} catch (error) {
 		console.error(
 			chalk.red("Error loading auth config:"),
@@ -214,20 +226,33 @@ async function main() {
 		providers.map((provider) => provider.fetchUsage(auth)),
 	);
 
+	// Error codes for filtering providers
+	const HIDDEN_ERROR_CODES: ErrorCode[] = [
+		"NO_ANTHROPIC_TOKEN",
+		"NO_OPENROUTER_KEY",
+		"NO_GEMINI_ACCOUNTS",
+		"API_ENDPOINT_UNAVAILABLE",
+		"TOKEN_REFRESH_FAILED",
+		"HTTP_NOT_FOUND",
+		"CONNECTION_REFUSED",
+		"FETCH_FAILED",
+	];
+
 	// Filter out providers without auth tokens or with API errors
 	const validResults = results
 		.filter((usage) => {
 			if (!usage.error) return true;
-			// Don't show providers that don't have tokens configured
+			// Check for standardized error codes first
+			if (usage.errorCode && HIDDEN_ERROR_CODES.includes(usage.errorCode)) {
+				return false;
+			}
+			// Fallback to message substring checks for backward compatibility
 			if (usage.error.includes("No Anthropic token")) return false;
 			if (usage.error.includes("No OpenRouter API key")) return false;
 			if (usage.error.includes("No Gemini accounts found")) return false;
-			// Don't show providers with API endpoint issues (not available, in development)
 			if (usage.error.includes("API endpoint not available")) return false;
 			if (usage.error.includes("may be in development")) return false;
-			// Don't show providers with token refresh failures
 			if (usage.error.includes("Token refresh failed")) return false;
-			// Don't show providers with connection errors (MiniMax, Antigravity)
 			if (usage.error.includes("HTTP 404")) return false;
 			if (usage.error.includes("fetch failed")) return false;
 			if (usage.error.includes("ECONNREFUSED")) return false;

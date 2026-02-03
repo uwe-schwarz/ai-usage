@@ -8,6 +8,7 @@ interface AntigravityAccount {
 }
 interface RefreshResult {
     accessToken: string;
+    refreshToken?: string;
     expiresAt: Date;
     email: string;
 }

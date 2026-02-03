@@ -4,6 +4,8 @@ import { join } from "node:path";
 const ANTIGRAVITY_ACCOUNTS_PATH = join(homedir(), ".config", "opencode", "antigravity-accounts.json");
 const ANTIGRAVITY_OAUTH_CONFIG = {
     clientId: "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com",
+    // These are public OAuth client credentials for the Antigravity application
+    // They are safe to include in source code as they identify the app, not the user
     clientSecret: "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",
     tokenUrl: "https://oauth2.googleapis.com/token",
     userInfoUrl: "https://www.googleapis.com/oauth2/v2/userinfo",
@@ -12,7 +14,17 @@ export async function getActiveAntigravityAccount() {
     try {
         const content = await readFile(ANTIGRAVITY_ACCOUNTS_PATH, "utf-8");
         const data = JSON.parse(content);
+        // Validate accounts array
+        if (!data.accounts ||
+            !Array.isArray(data.accounts) ||
+            data.accounts.length === 0) {
+            throw new Error("Invalid AntigravityAccountsFile: missing or empty accounts array");
+        }
         const activeIndex = data.activeIndex ?? 0;
+        // Validate activeIndex is within bounds
+        if (activeIndex < 0 || activeIndex >= data.accounts.length) {
+            throw new Error(`Invalid AntigravityAccountsFile: activeIndex ${activeIndex} out of bounds (accounts length: ${data.accounts.length})`);
+        }
         return data.accounts[activeIndex];
     }
     catch {
@@ -51,6 +63,7 @@ export async function refreshAntigravityToken(refreshToken) {
     }
     return {
         accessToken: data.access_token,
+        refreshToken: data.refresh_token ?? undefined,
         expiresAt,
         email,
     };

@@ -16,25 +16,25 @@ export class OpenCodeZenProvider {
             }
             // Run opencode stats command
             const stats = await this.runOpenCodeStats(binaryPath);
+            const monthlyLimit = 1000.0;
             if (!stats) {
                 // If no stats available, return 0 usage (as requested)
                 return {
                     provider: this.displayName,
                     primaryWindow: {
                         used: 0,
-                        limit: 100,
-                        remaining: 100,
+                        limit: monthlyLimit,
+                        remaining: monthlyLimit,
                         utilization: 0,
                     },
                     additionalInfo: "No usage data available",
                 };
             }
-            const monthlyLimit = 1000.0;
             const utilization = Math.min((stats.totalCost / monthlyLimit) * 100, 100);
             const primaryWindow = {
                 used: stats.totalCost,
                 limit: monthlyLimit,
-                remaining: monthlyLimit - stats.totalCost,
+                remaining: Math.max(0, monthlyLimit - stats.totalCost),
                 utilization,
             };
             return {
@@ -45,12 +45,13 @@ export class OpenCodeZenProvider {
         }
         catch (_error) {
             // Return 0 usage on error (as requested)
+            const monthlyLimit = 1000.0;
             return {
                 provider: this.displayName,
                 primaryWindow: {
                     used: 0,
-                    limit: 100,
-                    remaining: 100,
+                    limit: monthlyLimit,
+                    remaining: monthlyLimit,
                     utilization: 0,
                 },
                 additionalInfo: "No usage data available",
@@ -79,8 +80,7 @@ export class OpenCodeZenProvider {
                     await execAsync(`test -f "${path}"`);
                     return path;
                 }
-                catch {
-                }
+                catch { }
             }
         }
         return null;
