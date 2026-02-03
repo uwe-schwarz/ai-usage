@@ -8,7 +8,7 @@
 	"scripts": {
 		"build": "tsc",
 		"postinstall": "bun run build",
-		"start": "./scripts/start.sh",
+		"start": "./scripts/start.sh --",
 		"dev": "tsx src/index.ts",
 		"typecheck": "tsc --noEmit",
 		"lint": "biome lint .",

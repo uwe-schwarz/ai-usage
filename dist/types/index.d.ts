@@ -29,6 +29,8 @@ export interface UsageWindow {
     utilization: number;
     resetAt?: Date;
     resetInSeconds?: number;
+    minUtilization?: number;
+    maxUtilization?: number;
 }
 export type ErrorCode = "NO_ANTHROPIC_TOKEN" | "NO_OPENROUTER_KEY" | "NO_GEMINI_ACCOUNTS" | "API_ENDPOINT_UNAVAILABLE" | "TOKEN_REFRESH_FAILED" | "HTTP_NOT_FOUND" | "CONNECTION_REFUSED" | "FETCH_FAILED";
 export interface ProviderUsage {

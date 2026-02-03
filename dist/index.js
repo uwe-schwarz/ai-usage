@@ -132,7 +132,34 @@ function getUnsupportedProviders(auth) {
     const configuredProviders = Object.keys(auth).filter((key) => auth[key] !== undefined);
     return configuredProviders.filter((provider) => !supportedProviders.includes(provider));
 }
+function printHelp() {
+    console.log(chalk.bold.blue("\n🔍 AI Usage Monitor\n"));
+    console.log("Monitor AI provider usage limits from opencode config.\n");
+    console.log(chalk.bold("Usage:"));
+    console.log("  ai-usage-monitor [options]\n");
+    console.log(chalk.bold("Options:"));
+    console.log("  --help, -h              Show this help message");
+    console.log("  --show-antigravity      Show individual Antigravity model details\n");
+    console.log(chalk.bold("Examples:"));
+    console.log("  ai-usage-monitor                    # Show summary view");
+    console.log("  ai-usage-monitor --show-antigravity # Show all Antigravity models\n");
+    console.log(chalk.gray("Antigravity display:"));
+    console.log("  By default, Antigravity shows a range (e.g., 5%-88%) when models");
+    console.log("  have different utilization levels. Use --show-antigravity to see");
+    console.log("  individual model details.\n");
+}
+function parseArgs() {
+    const args = process.argv.slice(2);
+    const showAntigravityDetails = args.includes("--show-antigravity");
+    const showHelpFlag = args.includes("--help") || args.includes("-h");
+    return { showAntigravityDetails, showHelp: showHelpFlag };
+}
 async function main() {
+    const { showAntigravityDetails, showHelp } = parseArgs();
+    if (showHelp) {
+        printHelp();
+        process.exit(0);
+    }
     console.log(chalk.bold.blue("\n🔍 AI Usage Monitor\n"));
     let auth;
     let authPath;
@@ -209,7 +236,8 @@ async function main() {
         // Add main row
         table.push(formatProviderRow(usage));
         // Add sub-rows for multi-model providers (like Antigravity)
-        if (usage.subRows && usage.subRows.length > 0) {
+        // Only show details if --show-antigravity flag is passed
+        if (showAntigravityDetails && usage.subRows && usage.subRows.length > 0) {
             for (const subRow of usage.subRows) {
                 table.push(formatSubRow(usage.provider, subRow));
             }

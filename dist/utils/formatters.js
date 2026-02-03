@@ -18,11 +18,27 @@ export function formatDuration(ms) {
 export function formatWindow(window) {
     if (!window)
         return "N/A";
-    const percentage = window.utilization.toFixed(1);
+    // Check if we have a range (min/max utilization)
+    const hasRange = window.minUtilization !== undefined && window.maxUtilization !== undefined;
+    let percentageText;
+    if (hasRange) {
+        const min = window.minUtilization?.toFixed(1) ?? "0";
+        const max = window.maxUtilization?.toFixed(1) ?? "0";
+        // If all values are the same, show single value
+        if (min === max) {
+            percentageText = `${min}%`;
+        }
+        else {
+            percentageText = `${min}%-${max}%`;
+        }
+    }
+    else {
+        percentageText = `${window.utilization.toFixed(1)}%`;
+    }
     const resetText = window.resetAt
         ? formatDuration(window.resetAt.getTime() - Date.now())
         : "N/A";
-    return `${percentage}% (${resetText})`;
+    return `${percentageText} (${resetText})`;
 }
 export function calculatePace(weeklyWindow, _fiveHourWindow) {
     if (!weeklyWindow || weeklyWindow.limit === 0)
