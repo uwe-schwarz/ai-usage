@@ -1,4 +1,9 @@
 import { parseEpochMs } from "../utils/formatters.js";
+/**
+ * Provider for fetching usage data from Z.AI's coding plan API.
+ *
+ * Uses an API key to retrieve token and time (MCP) limits for the billing period.
+ */
 export class ZaiProvider {
     name = "zai";
     displayName = "Z.AI";

@@ -15,6 +15,11 @@ interface OpenCodeCreditsResponse {
 	data: OpenCodeCreditsData;
 }
 
+/**
+ * Provider for fetching usage data from OpenCode's API.
+ *
+ * Uses an API key to retrieve credit usage and remaining balance.
+ */
 export class OpenCodeProvider implements Provider {
 	name = "opencode";
 	displayName = "OpenCode";

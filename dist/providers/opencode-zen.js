@@ -1,6 +1,12 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 const execAsync = promisify(exec);
+/**
+ * Provider for fetching usage data from the OpenCode Zen CLI.
+ *
+ * Executes the OpenCode binary to retrieve local usage statistics
+ * including total cost, sessions, and messages.
+ */
 export class OpenCodeZenProvider {
     name = "opencode-zen";
     displayName = "OpenCode Zen";
@@ -58,6 +64,13 @@ export class OpenCodeZenProvider {
             };
         }
     }
+    /**
+     * Locate the OpenCode binary on the system.
+     *
+     * First tries 'which opencode', then falls back to common installation paths.
+     *
+     * @returns The path to the OpenCode binary, or null if not found.
+     */
     async findOpenCodeBinary() {
         try {
             // Try 'which opencode'
@@ -85,6 +98,12 @@ export class OpenCodeZenProvider {
         }
         return null;
     }
+    /**
+     * Execute the OpenCode stats command to retrieve usage data.
+     *
+     * @param binaryPath - Path to the OpenCode binary.
+     * @returns Parsed OpenCodeStats, or null if the command fails.
+     */
     async runOpenCodeStats(binaryPath) {
         try {
             const { stdout } = await execAsync(`"${binaryPath}" stats --days 7`, {
@@ -96,6 +115,12 @@ export class OpenCodeZenProvider {
             return null;
         }
     }
+    /**
+     * Parse the stdout from 'opencode stats' into structured data.
+     *
+     * @param output - The raw stdout from the OpenCode stats command.
+     * @returns Parsed OpenCodeStats, or null if parsing fails.
+     */
     parseStats(output) {
         try {
             // Parse Total Cost

@@ -1,4 +1,9 @@
 import { parseISO8601 } from "../utils/formatters.js";
+/**
+ * Provider for fetching usage data from Anthropic's Claude API.
+ *
+ * Uses OAuth credentials to fetch five-hour and seven-day rate limit utilization.
+ */
 export class ClaudeProvider {
     name = "claude";
     displayName = "Claude";

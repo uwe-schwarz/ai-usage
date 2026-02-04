@@ -16,6 +16,12 @@ interface OpenCodeStats {
 	messages: number;
 }
 
+/**
+ * Provider for fetching usage data from the OpenCode Zen CLI.
+ *
+ * Executes the OpenCode binary to retrieve local usage statistics
+ * including total cost, sessions, and messages.
+ */
 export class OpenCodeZenProvider implements Provider {
 	name = "opencode-zen";
 	displayName = "OpenCode Zen";
@@ -80,6 +86,13 @@ export class OpenCodeZenProvider implements Provider {
 		}
 	}
 
+	/**
+	 * Locate the OpenCode binary on the system.
+	 *
+	 * First tries 'which opencode', then falls back to common installation paths.
+	 *
+	 * @returns The path to the OpenCode binary, or null if not found.
+	 */
 	private async findOpenCodeBinary(): Promise<string | null> {
 		try {
 			// Try 'which opencode'
@@ -106,6 +119,12 @@ export class OpenCodeZenProvider implements Provider {
 		return null;
 	}
 
+	/**
+	 * Execute the OpenCode stats command to retrieve usage data.
+	 *
+	 * @param binaryPath - Path to the OpenCode binary.
+	 * @returns Parsed OpenCodeStats, or null if the command fails.
+	 */
 	private async runOpenCodeStats(
 		binaryPath: string,
 	): Promise<OpenCodeStats | null> {
@@ -119,6 +138,12 @@ export class OpenCodeZenProvider implements Provider {
 		}
 	}
 
+	/**
+	 * Parse the stdout from 'opencode stats' into structured data.
+	 *
+	 * @param output - The raw stdout from the OpenCode stats command.
+	 * @returns Parsed OpenCodeStats, or null if parsing fails.
+	 */
 	private parseStats(output: string): OpenCodeStats | null {
 		try {
 			// Parse Total Cost

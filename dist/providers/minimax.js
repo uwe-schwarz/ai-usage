@@ -1,3 +1,8 @@
+/**
+ * Provider for fetching usage data from MiniMax's coding plan API.
+ *
+ * Uses an API key to retrieve remaining quota for coding plan models.
+ */
 export class MiniMaxProvider {
     name = "minimax";
     displayName = "MiniMax";
@@ -39,7 +44,9 @@ export class MiniMaxProvider {
                     // Track earliest reset time
                     // Normalize timestamps: if value < 1e12 it's likely seconds, multiply by 1000
                     if (model.remains_time) {
-                        const timestamp = model.remains_time < 1e12 ? model.remains_time * 1000 : model.remains_time;
+                        const timestamp = model.remains_time < 1e12
+                            ? model.remains_time * 1000
+                            : model.remains_time;
                         const resetDate = new Date(timestamp);
                         if (!earliestReset || resetDate < earliestReset) {
                             earliestReset = resetDate;

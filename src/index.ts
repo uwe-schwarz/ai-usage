@@ -35,6 +35,14 @@ interface AuthConfigResult {
 	path: string;
 }
 
+/**
+ * Load authentication configuration from standard locations.
+ *
+ * Searches for auth.json in XDG_DATA_HOME, ~/.local/share, and ~/Library/Application Support.
+ *
+ * @returns An AuthConfigResult containing the parsed config and the path it was loaded from.
+ * @throws Error if no valid auth.json is found in any location.
+ */
 async function loadAuthConfig(): Promise<AuthConfigResult> {
 	const possiblePaths = [
 		process.env.XDG_DATA_HOME &&
@@ -54,6 +62,14 @@ async function loadAuthConfig(): Promise<AuthConfigResult> {
 	throw new Error("Could not find auth.json in any standard location");
 }
 
+/**
+ * Calculate the optimal column width for the provider column in the usage table.
+ *
+ * Bases width on the longest provider name or sub-row label plus padding.
+ *
+ * @param results - Array of provider usage results that may include sub-rows.
+ * @returns The column width in characters.
+ */
 function calculateProviderColumnWidth(results: ProviderUsage[]): number {
 	const baseWidth = 18;
 	let maxLabelLength = 0;
@@ -75,6 +91,12 @@ function calculateProviderColumnWidth(results: ProviderUsage[]): number {
 	return Math.max(baseWidth, maxLabelLength + 2);
 }
 
+/**
+ * Create a CLI table instance for displaying usage data.
+ *
+ * @param providerColWidth - The width for the provider name column.
+ * @returns A configured Table instance.
+ */
 function createTable(providerColWidth: number): Table.Table {
 	return new Table({
 		head: [
@@ -93,6 +115,12 @@ function createTable(providerColWidth: number): Table.Table {
 	});
 }
 
+/**
+ * Get the brand color for a provider name.
+ *
+ * @param provider - The display name of the provider.
+ * @returns A hex color string for the provider's brand color, or white if unknown.
+ */
 function getProviderColor(provider: string): string {
 	const colors: Record<string, string> = {
 		Claude: "#D97757",
@@ -109,11 +137,24 @@ function getProviderColor(provider: string): string {
 	return colors[provider] || "#FFFFFF";
 }
 
+/**
+ * Truncate a string to a maximum length with ellipsis.
+ *
+ * @param str - The string to truncate.
+ * @param maxLength - Maximum length before truncation.
+ * @returns The original string if shorter than maxLength, or truncated version with "..." suffix.
+ */
 function truncate(str: string, maxLength: number): string {
 	if (str.length <= maxLength) return str;
 	return `${str.substring(0, maxLength - 3)}...`;
 }
 
+/**
+ * Format a provider usage result as a table row.
+ *
+ * @param usage - The ProviderUsage to format.
+ * @returns An array of formatted cell values for the table row.
+ */
 function formatProviderRow(usage: ProviderUsage): string[] {
 	const color = getProviderColor(usage.provider);
 
@@ -154,6 +195,13 @@ function formatProviderRow(usage: ProviderUsage): string[] {
 	];
 }
 
+/**
+ * Format a sub-row (e.g., Antigravity model) as a table row.
+ *
+ * @param providerName - The parent provider name for color attribution.
+ * @param subRow - The sub-row data containing label and window.
+ * @returns An array of formatted cell values for the sub-row.
+ */
 function formatSubRow(
 	providerName: string,
 	subRow: { label: string; window: import("./types/index.js").UsageWindow },
@@ -167,6 +215,12 @@ function formatSubRow(
 	return [chalk.hex(color)(fullLabel), windowText, "", "", ""];
 }
 
+/**
+ * Identify provider keys present in an AuthConfig that are not part of the officially supported provider list.
+ *
+ * @param auth - The parsed auth configuration object; keys with `undefined` values are treated as absent.
+ * @returns The configured provider keys from `auth` that are not recognized as supported providers.
+ */
 function getUnsupportedProviders(auth: AuthConfig): string[] {
 	const supportedProviders = [
 		"anthropic", // Claude
@@ -189,6 +243,11 @@ function getUnsupportedProviders(auth: AuthConfig): string[] {
 	);
 }
 
+/**
+ * Print the CLI help banner, usage instructions, available options, and examples to stdout.
+ *
+ * Includes a short note explaining the Antigravity display behavior and the --show-antigravity flag.
+ */
 function printHelp(): void {
 	console.log(chalk.bold.blue("\n🔍 AI Usage Monitor\n"));
 	console.log("Monitor AI provider usage limits from opencode config.\n");
@@ -214,6 +273,11 @@ function printHelp(): void {
 	console.log("  individual model details.\n");
 }
 
+/**
+ * Parse command-line arguments to determine whether to display Antigravity sub-rows and whether help was requested.
+ *
+ * @returns An object where `showAntigravityDetails` is `true` if `--show-antigravity` is present (otherwise `false`), and `showHelp` is `true` if `--help` or `-h` is present (otherwise `false`).
+ */
 function parseArgs(): { showAntigravityDetails: boolean; showHelp: boolean } {
 	const args = process.argv.slice(2);
 	const showAntigravityDetails = args.includes("--show-antigravity");
@@ -221,6 +285,15 @@ function parseArgs(): { showAntigravityDetails: boolean; showHelp: boolean } {
 	return { showAntigravityDetails, showHelp: showHelpFlag };
 }
 
+/**
+ * Run the CLI: load auth configuration, fetch usage from providers, and render a usage table to stdout.
+ *
+ * Loads the auth.json from standard locations, instantiates provider clients, retrieves usage data,
+ * filters and sorts results, and prints a formatted table with pace indicators and a legend.
+ * Honors CLI flags (help and --show-antigravity) — printing help and exiting when requested,
+ * and showing Antigravity sub-rows only when the flag is provided. Exits the process with code 1
+ * if auth loading fails. Outputs status and error messages to stdout/stderr.
+ */
 async function main() {
 	const { showAntigravityDetails, showHelp } = parseArgs();
 

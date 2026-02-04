@@ -1,3 +1,8 @@
+/**
+ * Provider for fetching usage data from OpenAI's Codex/ChatGPT API.
+ *
+ * Uses OAuth credentials to fetch rate limit utilization for the user's account.
+ */
 export class CodexProvider {
     name = "codex";
     displayName = "Codex (OpenAI)";
