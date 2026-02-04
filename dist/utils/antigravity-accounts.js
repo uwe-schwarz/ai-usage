@@ -10,6 +10,15 @@ const ANTIGRAVITY_OAUTH_CONFIG = {
     tokenUrl: "https://oauth2.googleapis.com/token",
     userInfoUrl: "https://www.googleapis.com/oauth2/v2/userinfo",
 };
+/**
+ * Load the active Antigravity account from the configuration file.
+ *
+ * Reads antigravity-accounts.json from the user's config directory and returns
+ * the account at the activeIndex. Returns undefined if the file is missing,
+ * invalid, or contains no accounts.
+ *
+ * @returns The active AntigravityAccount, or undefined if not available.
+ */
 export async function getActiveAntigravityAccount() {
     try {
         const content = await readFile(ANTIGRAVITY_ACCOUNTS_PATH, "utf-8");
@@ -31,6 +40,16 @@ export async function getActiveAntigravityAccount() {
         return undefined;
     }
 }
+/**
+ * Refresh an Antigravity OAuth access token using a refresh token.
+ *
+ * Sends the refresh token to Google's OAuth endpoint to obtain a new access token.
+ * Also fetches the user's email from the userinfo endpoint.
+ *
+ * @param refreshToken - The OAuth refresh token from the Antigravity account.
+ * @returns A RefreshResult containing the new access token, optional new refresh token, expiry time, and email.
+ * @throws Error if the token refresh fails, including "invalid_grant" for expired refresh tokens.
+ */
 export async function refreshAntigravityToken(refreshToken) {
     const params = new URLSearchParams({
         client_id: ANTIGRAVITY_OAUTH_CONFIG.clientId,
@@ -68,6 +87,13 @@ export async function refreshAntigravityToken(refreshToken) {
         email,
     };
 }
+/**
+ * Fetch the user's email address from Google's OAuth userinfo endpoint.
+ *
+ * @param accessToken - A valid OAuth access token.
+ * @returns The user's email address.
+ * @throws Error if the request fails or email is missing from the response.
+ */
 async function fetchUserEmail(accessToken) {
     const response = await fetch(ANTIGRAVITY_OAUTH_CONFIG.userInfoUrl, {
         headers: {

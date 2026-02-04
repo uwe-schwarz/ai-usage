@@ -5,7 +5,6 @@ import type {
 	UsageWindow,
 } from "../types/index.js";
 
-
 interface CodexRateLimitWindow {
 	used_percent: number;
 	limit_window_seconds?: number;
@@ -24,6 +23,11 @@ interface CodexResponse {
 	};
 }
 
+/**
+ * Provider for fetching usage data from OpenAI's Codex/ChatGPT API.
+ *
+ * Uses OAuth credentials to fetch rate limit utilization for the user's account.
+ */
 export class CodexProvider implements Provider {
 	name = "codex";
 	displayName = "Codex (OpenAI)";

@@ -24,6 +24,11 @@ interface ZaiEnvelopedResponse {
 	code?: number;
 }
 
+/**
+ * Provider for fetching usage data from Z.AI's coding plan API.
+ *
+ * Uses an API key to retrieve token and time (MCP) limits for the billing period.
+ */
 export class ZaiProvider implements Provider {
 	name = "zai";
 	displayName = "Z.AI";

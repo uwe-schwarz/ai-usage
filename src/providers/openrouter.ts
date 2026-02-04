@@ -27,6 +27,11 @@ interface OpenRouterKeyResponse {
 	data: OpenRouterKeyData;
 }
 
+/**
+ * Provider for fetching usage data from OpenRouter's API.
+ *
+ * Uses an API key to retrieve credit balance and key-level usage statistics.
+ */
 export class OpenRouterProvider implements Provider {
 	name = "openrouter";
 	displayName = "OpenRouter";

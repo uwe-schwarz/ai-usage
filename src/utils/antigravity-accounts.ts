@@ -19,6 +19,9 @@ const ANTIGRAVITY_OAUTH_CONFIG = {
 	userInfoUrl: "https://www.googleapis.com/oauth2/v2/userinfo",
 };
 
+/**
+ * Represents a single Antigravity account stored in antigravity-accounts.json.
+ */
 interface AntigravityAccount {
 	email: string;
 	refreshToken: string;
@@ -28,6 +31,9 @@ interface AntigravityAccount {
 	managedProjectId: string;
 }
 
+/**
+ * The structure of the antigravity-accounts.json configuration file.
+ */
 interface AntigravityAccountsFile {
 	version: number;
 	accounts: AntigravityAccount[];
@@ -35,6 +41,9 @@ interface AntigravityAccountsFile {
 	activeIndexByFamily: Record<string, number>;
 }
 
+/**
+ * Response from the OAuth token refresh endpoint.
+ */
 interface TokenRefreshResponse {
 	access_token: string;
 	expires_in: number;
@@ -42,10 +51,16 @@ interface TokenRefreshResponse {
 	token_type: string;
 }
 
+/**
+ * Response from the Google OAuth userinfo endpoint.
+ */
 interface UserInfoResponse {
 	email: string;
 }
 
+/**
+ * Result of a successful token refresh operation.
+ */
 interface RefreshResult {
 	accessToken: string;
 	refreshToken?: string;
@@ -53,6 +68,15 @@ interface RefreshResult {
 	email: string;
 }
 
+/**
+ * Load the active Antigravity account from the configuration file.
+ *
+ * Reads antigravity-accounts.json from the user's config directory and returns
+ * the account at the activeIndex. Returns undefined if the file is missing,
+ * invalid, or contains no accounts.
+ *
+ * @returns The active AntigravityAccount, or undefined if not available.
+ */
 export async function getActiveAntigravityAccount(): Promise<
 	AntigravityAccount | undefined
 > {
@@ -86,6 +110,16 @@ export async function getActiveAntigravityAccount(): Promise<
 	}
 }
 
+/**
+ * Refresh an Antigravity OAuth access token using a refresh token.
+ *
+ * Sends the refresh token to Google's OAuth endpoint to obtain a new access token.
+ * Also fetches the user's email from the userinfo endpoint.
+ *
+ * @param refreshToken - The OAuth refresh token from the Antigravity account.
+ * @returns A RefreshResult containing the new access token, optional new refresh token, expiry time, and email.
+ * @throws Error if the token refresh fails, including "invalid_grant" for expired refresh tokens.
+ */
 export async function refreshAntigravityToken(
 	refreshToken: string,
 ): Promise<RefreshResult> {
@@ -130,6 +164,13 @@ export async function refreshAntigravityToken(
 	};
 }
 
+/**
+ * Fetch the user's email address from Google's OAuth userinfo endpoint.
+ *
+ * @param accessToken - A valid OAuth access token.
+ * @returns The user's email address.
+ * @throws Error if the request fails or email is missing from the response.
+ */
 async function fetchUserEmail(accessToken: string): Promise<string> {
 	const response = await fetch(ANTIGRAVITY_OAUTH_CONFIG.userInfoUrl, {
 		headers: {

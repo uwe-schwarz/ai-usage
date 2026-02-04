@@ -21,6 +21,12 @@ interface GeminiAccount {
 	refreshToken: string;
 }
 
+/**
+ * Provider for fetching usage data from Google's Gemini CLI.
+ *
+ * Uses OAuth refresh tokens from antigravity-accounts.json to access
+ * the Cloud Code quota API for Gemini usage information.
+ */
 export class GeminiProvider implements Provider {
 	name = "gemini";
 	displayName = "Gemini CLI";
@@ -112,6 +118,12 @@ export class GeminiProvider implements Provider {
 		};
 	}
 
+	/**
+	 * Load Gemini accounts from the Antigravity accounts configuration file.
+	 *
+	 * @param _auth - Unused; accounts are loaded directly from file.
+	 * @returns Array of Gemini accounts with project IDs and refresh tokens.
+	 */
 	private async getAccounts(_auth: AuthConfig): Promise<GeminiAccount[]> {
 		try {
 			const fs = await import("node:fs/promises");
@@ -148,6 +160,13 @@ export class GeminiProvider implements Provider {
 		}
 	}
 
+	/**
+	 * Refresh an OAuth access token for a Gemini account.
+	 *
+	 * @param refreshToken - The OAuth refresh token for the account.
+	 * @returns A valid OAuth access token.
+	 * @throws Error if token refresh fails.
+	 */
 	private async refreshToken(refreshToken: string): Promise<string> {
 		// These are public OAuth client credentials for the Gemini CLI application
 		// They are safe to include in source code as they identify the app, not the user

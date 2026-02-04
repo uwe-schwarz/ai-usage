@@ -36,6 +36,12 @@ interface CloudCodeModelQuota {
 	resetTime?: string;
 }
 
+/**
+ * Provider for fetching usage data from Antigravity's Cloud Code API.
+ *
+ * Uses OAuth credentials to retrieve model-specific quota information
+ * for all available Antigravity models.
+ */
 export class AntigravityProvider implements Provider {
 	name = "antigravity";
 	displayName = "Antigravity";
@@ -108,6 +114,16 @@ export class AntigravityProvider implements Provider {
 		}
 	}
 
+	/**
+	 * Fetch quota data from Cloud Code endpoints.
+	 *
+	 * Attempts each configured base URL in sequence until one succeeds.
+	 *
+	 * @param accessToken - OAuth access token for authentication.
+	 * @param projectId - Optional GCP project ID.
+	 * @returns Array of model quota data.
+	 * @throws Error if all endpoints fail.
+	 */
 	private async fetchQuota(
 		accessToken: string,
 		projectId?: string,
@@ -129,6 +145,15 @@ export class AntigravityProvider implements Provider {
 		throw lastError ?? new Error("All Cloud Code endpoints failed");
 	}
 
+	/**
+	 * Fetch quota from a specific Cloud Code endpoint.
+	 *
+	 * @param baseUrl - The base URL for the Cloud Code API.
+	 * @param accessToken - OAuth access token for authentication.
+	 * @param projectId - Optional GCP project ID.
+	 * @returns Array of model quota data.
+	 * @throws Error if the request fails.
+	 */
 	private async fetchQuotaFromEndpoint(
 		baseUrl: string,
 		accessToken: string,
@@ -169,6 +194,12 @@ export class AntigravityProvider implements Provider {
 		return this.parseQuotaResponse(data);
 	}
 
+	/**
+	 * Parse the Cloud Code quota response into a structured format.
+	 *
+	 * @param data - Raw JSON response from the API.
+	 * @returns Array of parsed model quota data.
+	 */
 	private parseQuotaResponse(
 		data: CloudCodeQuotaResponse,
 	): CloudCodeModelQuota[] {
@@ -188,6 +219,16 @@ export class AntigravityProvider implements Provider {
 		return models;
 	}
 
+	/**
+	 * Convert quota data into ProviderUsage for display.
+	 *
+	 * Calculates min/max utilization across models for range display
+	 * and generates sub-rows for individual model details.
+	 *
+	 * @param models - Array of model quota data.
+	 * @param email - Optional account email for additional info.
+	 * @returns Formatted ProviderUsage object.
+	 */
 	private parseResponse(
 		models: CloudCodeModelQuota[],
 		email?: string,
@@ -264,6 +305,14 @@ export class AntigravityProvider implements Provider {
 		};
 	}
 
+	/**
+	 * Parse a reset time string into a Date object.
+	 *
+	 * Accepts ISO 8601 strings or Unix epoch seconds.
+	 *
+	 * @param resetTime - The reset time string to parse.
+	 * @returns A Date object, or undefined if parsing fails.
+	 */
 	private parseResetTime(resetTime: string): Date | undefined {
 		const date = new Date(resetTime);
 		if (!Number.isNaN(date.getTime())) {

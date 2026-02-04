@@ -1,4 +1,9 @@
 import { parseISO8601 } from "../utils/formatters.js";
+/**
+ * Provider for fetching usage data from Kimi's coding API.
+ *
+ * Uses an API key to retrieve usage limits and remaining quota.
+ */
 export class KimiProvider {
     name = "kimi";
     displayName = "Kimi";

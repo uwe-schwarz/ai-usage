@@ -34,6 +34,11 @@ interface KimiUsageResponse {
 	limits?: KimiLimit[];
 }
 
+/**
+ * Provider for fetching usage data from Kimi's coding API.
+ *
+ * Uses an API key to retrieve usage limits and remaining quota.
+ */
 export class KimiProvider implements Provider {
 	name = "kimi";
 	displayName = "Kimi";

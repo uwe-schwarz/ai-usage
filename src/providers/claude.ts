@@ -19,6 +19,11 @@ interface ClaudeUsageResponse {
 	extra_usage?: { is_enabled: boolean };
 }
 
+/**
+ * Provider for fetching usage data from Anthropic's Claude API.
+ *
+ * Uses OAuth credentials to fetch five-hour and seven-day rate limit utilization.
+ */
 export class ClaudeProvider implements Provider {
 	name = "claude";
 	displayName = "Claude";
