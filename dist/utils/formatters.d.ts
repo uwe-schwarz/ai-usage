@@ -27,6 +27,7 @@ export declare function formatWindow(window: UsageWindow | undefined): string;
  * - `"↓ X.X% behind"` when usage is behind expected (one decimal place).
  */
 export declare function calculatePace(weeklyWindow: UsageWindow | undefined, _fiveHourWindow: UsageWindow | undefined): string;
+export declare function calculateFiveHourPace(fiveHourWindow: UsageWindow | undefined): string;
 /**
  * Compute a pace status for monthly MCP limits.
  *
