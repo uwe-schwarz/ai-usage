@@ -46,11 +46,12 @@ export class ZaiProvider {
                     ? parseFloat(tokensLimit.percentage)
                     : tokensLimit.percentage || 0;
                 const total = tokensLimit.total || 100;
-                const used = tokensLimit.currentValue || 0;
+                const remaining = tokensLimit.currentValue || 0;
+                const used = total - remaining;
                 primaryWindow = {
                     used,
                     limit: total,
-                    remaining: total - used,
+                    remaining,
                     utilization: percentage,
                     resetAt: tokensLimit.nextResetTime
                         ? parseEpochMs(tokensLimit.nextResetTime)
@@ -63,13 +64,14 @@ export class ZaiProvider {
                     ? parseFloat(timeLimit.percentage)
                     : timeLimit.percentage || 0;
                 const total = timeLimit.total || 100;
-                const used = timeLimit.currentValue || 0;
+                const used = Math.round((percentage / 100) * total);
+                const remaining = total - used;
                 const now = new Date();
                 const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
                 tertiaryWindow = {
                     used,
                     limit: total,
-                    remaining: total - used,
+                    remaining,
                     utilization: percentage,
                     resetAt: endOfMonth,
                 };

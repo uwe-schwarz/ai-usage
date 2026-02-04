@@ -5,7 +5,7 @@ import path from "node:path";
 import chalk from "chalk";
 import Table from "cli-table3";
 import { AntigravityProvider, ClaudeProvider, CodexProvider, GeminiProvider, KimiProvider, MiniMaxProvider, OpenCodeProvider, OpenCodeZenProvider, OpenRouterProvider, ZaiProvider, } from "./providers/index.js";
-import { calculateMonthlyPace, calculatePace, formatWindow, getPaceColor, } from "./utils/formatters.js";
+import { calculateFiveHourPace, calculateMonthlyPace, calculatePace, formatWindow, getPaceColor, } from "./utils/formatters.js";
 /**
  * Load authentication configuration from standard locations.
  *
@@ -68,10 +68,10 @@ function createTable(providerColWidth) {
             chalk.bold.white("Provider"),
             chalk.bold.white("5-hour window"),
             chalk.bold.white("Weekly"),
-            chalk.bold.white("MCP (monthly)"),
+            chalk.bold.white("Monthly"),
             chalk.bold.white("Pace"),
         ],
-        colWidths: [providerColWidth, 22, 22, 22, 22],
+        colWidths: [providerColWidth, 22, 22, 26, 22],
         wordWrap: false,
         style: {
             head: [],
@@ -131,24 +131,29 @@ function formatProviderRow(usage) {
     }
     const fiveHourText = formatWindow(usage.primaryWindow);
     const weeklyText = formatWindow(usage.secondaryWindow);
-    const mcpText = formatWindow(usage.tertiaryWindow);
-    const pace = usage.provider === "Z.AI"
-        ? calculateMonthlyPace(usage.tertiaryWindow)
-        : calculatePace(usage.secondaryWindow, usage.primaryWindow);
-    const paceColor = getPaceColor(pace);
-    const coloredPace = paceColor === "green"
-        ? chalk.green(pace)
-        : paceColor === "red"
-            ? chalk.red(pace)
-            : paceColor === "yellow"
-                ? chalk.yellow(pace)
-                : chalk.white(pace);
+    let monthlyText = formatWindow(usage.tertiaryWindow);
+    if (usage.provider === "Z.AI" && monthlyText !== "N/A") {
+        monthlyText = `mcp: ${monthlyText}`;
+    }
+    const fiveHourPace = calculateFiveHourPace(usage.primaryWindow);
+    const weeklyPace = calculatePace(usage.secondaryWindow, usage.primaryWindow);
+    const monthlyPace = calculateMonthlyPace(usage.tertiaryWindow);
+    const pace = usage.provider === "Z.AI" ? monthlyPace : weeklyPace;
+    const coloredCell = (text, paceColor) => {
+        if (paceColor === "green")
+            return chalk.green(text);
+        if (paceColor === "red")
+            return chalk.red(text);
+        if (paceColor === "gray")
+            return chalk.gray(text);
+        return text;
+    };
     return [
         chalk.hex(color)(usage.provider),
-        fiveHourText,
-        weeklyText,
-        mcpText,
-        coloredPace,
+        coloredCell(fiveHourText, getPaceColor(fiveHourPace)),
+        coloredCell(weeklyText, getPaceColor(weeklyPace)),
+        coloredCell(monthlyText, getPaceColor(monthlyPace)),
+        coloredCell(pace, getPaceColor(pace)),
     ];
 }
 /**
@@ -321,7 +326,7 @@ async function main() {
     console.log(chalk.gray("Legend:"));
     console.log(chalk.gray("  • 5-hour window: Short-term rate limit usage"));
     console.log(chalk.gray("  • Weekly: Long-term usage limit"));
-    console.log(chalk.gray("  • MCP (monthly): Model Context Protocol time limits"));
+    console.log(chalk.gray("  • Monthly: Model Context Protocol time limits"));
     console.log(chalk.gray("  • Pace:"));
     console.log(chalk.green("    ✓ on track") +
         chalk.gray(" = usage matches expected pace"));

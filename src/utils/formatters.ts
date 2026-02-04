@@ -106,6 +106,41 @@ export function calculatePace(
 	}
 }
 
+export function calculateFiveHourPace(
+	fiveHourWindow: UsageWindow | undefined,
+): string {
+	if (!fiveHourWindow || fiveHourWindow.limit === 0) return "N/A";
+
+	const now = new Date();
+	const resetAt = fiveHourWindow.resetAt;
+
+	if (!resetAt) {
+		const used = fiveHourWindow.used;
+		const limit = fiveHourWindow.limit;
+		const percentage = (used / limit) * 100;
+		return `${percentage.toFixed(1)}% used`;
+	}
+
+	const timeUntilReset = resetAt.getTime() - now.getTime();
+	const totalFiveHourMs = 5 * 60 * 60 * 1000;
+	const timeElapsed = totalFiveHourMs - timeUntilReset;
+
+	if (timeElapsed <= 0) return "0% (just reset)";
+
+	const expectedUsage = (timeElapsed / totalFiveHourMs) * fiveHourWindow.limit;
+	const actualUsage = fiveHourWindow.used;
+	const diff = actualUsage - expectedUsage;
+	const diffPercentage = (diff / fiveHourWindow.limit) * 100;
+
+	if (Math.abs(diffPercentage) < 5) {
+		return "✓ on track";
+	} else if (diff > 0) {
+		return `↑ ${diffPercentage.toFixed(1)}% ahead`;
+	} else {
+		return `↓ ${Math.abs(diffPercentage).toFixed(1)}% behind`;
+	}
+}
+
 /**
  * Compute a pace status for monthly MCP limits.
  *
@@ -117,38 +152,38 @@ export function calculatePace(
 export function calculateMonthlyPace(
 	monthlyWindow: UsageWindow | undefined,
 ): string {
-	if (!monthlyWindow || monthlyWindow.limit === 0) return "N/A";
+	if (!monthlyWindow || monthlyWindow.limit === 0) return "mcp: N/A";
 
 	const now = new Date();
 	const resetAt = monthlyWindow.resetAt;
+	const usagePercentage = monthlyWindow.utilization;
 
 	if (!resetAt) {
-		const percentage = (monthlyWindow.used / monthlyWindow.limit) * 100;
-		return `mcp: ${percentage.toFixed(1)}% used`;
+		return `mcp: ${usagePercentage.toFixed(1)}%`;
 	}
 
-	const timeUntilReset = resetAt.getTime() - now.getTime();
-	if (timeUntilReset <= 0) return "mcp: 0% (just reset)";
+	const nowMs = now.getTime();
+	const resetAtMs = resetAt.getTime();
+	const startOfMonth = new Date(
+		now.getFullYear(),
+		now.getMonth(),
+		1,
+		12,
+		0,
+		0,
+	).getTime();
+	const totalMonthMs = resetAtMs - startOfMonth;
+	const elapsedMs = nowMs - startOfMonth;
+	const elapsedPercentage = (elapsedMs / totalMonthMs) * 100;
 
-	const totalMonthMs = 30 * 24 * 60 * 60 * 1000;
-	const timeElapsed = totalMonthMs - timeUntilReset;
+	const diff = usagePercentage - elapsedPercentage;
 
-	// Guard against negative or out-of-range timeElapsed
-	const clampedTimeElapsed = Math.max(0, Math.min(timeElapsed, totalMonthMs));
-	if (clampedTimeElapsed <= 0) return "mcp: 0% (just reset)";
-
-	const expectedUsage =
-		(clampedTimeElapsed / totalMonthMs) * monthlyWindow.limit;
-	const actualUsage = monthlyWindow.used;
-	const diff = actualUsage - expectedUsage;
-	const diffPercentage = (diff / monthlyWindow.limit) * 100;
-
-	if (Math.abs(diffPercentage) < 5) {
+	if (Math.abs(diff) < 5) {
 		return "mcp: ✓ on track";
-	} else if (diff > 0) {
-		return `mcp: ↑ ${diffPercentage.toFixed(1)}% ahead`;
+	} else if (diff <= 0) {
+		return "mcp: ↓ behind";
 	} else {
-		return `mcp: ↓ ${Math.abs(diffPercentage).toFixed(1)}% behind`;
+		return "mcp: ↑ ahead";
 	}
 }
 
@@ -159,10 +194,10 @@ export function calculateMonthlyPace(
  * @returns "green" for on-track or behind pace, "red" for ahead of pace, or "white" for unknown.
  */
 export function getPaceColor(pace: string): string {
-	// "behind" is good (green), "ahead" is bad (red)
-	if (pace.includes("✓")) return "green";
-	if (pace.includes("↑")) return "red"; // ahead = using more than expected
-	if (pace.includes("↓")) return "green"; // behind = using less than expected (good!)
+	if (pace === "N/A" || pace.includes("N/A")) return "gray";
+	if (pace.includes("✓") || pace.includes("on track")) return "green";
+	if (pace.includes("↑") || pace.includes("ahead")) return "red";
+	if (pace.includes("↓") || pace.includes("behind")) return "green";
 	return "white";
 }
 
