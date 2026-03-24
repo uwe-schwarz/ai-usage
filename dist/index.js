@@ -239,18 +239,16 @@ async function main() {
         process.exit(0);
     }
     console.log(chalk.bold.blue("\n🔍 AI Usage Monitor\n"));
-    let auth;
-    let authPath;
+    let authResult;
     try {
-        const result = await loadAuthConfig();
-        auth = result.config;
-        authPath = result.path;
-        console.log(chalk.gray(`Loaded auth config from ${authPath}\n`));
+        authResult = await loadAuthConfig();
+        console.log(chalk.gray(`Loaded auth config from ${authResult.path}\n`));
     }
     catch (error) {
         console.error(chalk.red("Error loading auth config:"), error instanceof Error ? error.message : error);
         process.exit(1);
     }
+    const { config: auth } = authResult;
     const providers = [
         new ClaudeProvider(),
         new CodexProvider(),
