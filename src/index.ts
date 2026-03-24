@@ -307,13 +307,10 @@ async function main() {
 
 	console.log(chalk.bold.blue("\n🔍 AI Usage Monitor\n"));
 
-	let auth: AuthConfig;
-	let authPath: string;
+	let authResult: AuthConfigResult;
 	try {
-		const result = await loadAuthConfig();
-		auth = result.config;
-		authPath = result.path;
-		console.log(chalk.gray(`Loaded auth config from ${authPath}\n`));
+		authResult = await loadAuthConfig();
+		console.log(chalk.gray(`Loaded auth config from ${authResult.path}\n`));
 	} catch (error) {
 		console.error(
 			chalk.red("Error loading auth config:"),
@@ -321,6 +318,7 @@ async function main() {
 		);
 		process.exit(1);
 	}
+	const { config: auth } = authResult;
 
 	const providers: Provider[] = [
 		new ClaudeProvider(),
