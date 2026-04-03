@@ -20,8 +20,8 @@
 		"cli-table3": "^0.6.5"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.4.9",
-		"@types/node": "^25.5.0",
+		"@biomejs/biome": "^2.4.10",
+		"@types/node": "^25.5.1",
 		"tsx": "^4.21.0",
 		"typescript": "^6.0.2"
 	}
