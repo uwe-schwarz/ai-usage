@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
 import fs from "node:fs/promises";
+import { execFile } from "node:child_process";
 import path from "node:path";
+import { promisify } from "node:util";
 
 const rootArg = process.argv[2];
 
@@ -40,28 +42,25 @@ const dependencySections = [
   "optionalDependencies",
   "peerDependencies",
 ];
+const execFileAsync = promisify(execFile);
+const textLockfilePattern = /@latest(?=[:\s,"'])|"latest"/;
 
-async function walk(dir, found = []) {
-  const entries = await fs.readdir(dir, { withFileTypes: true });
+function writeStdout(line) {
+  process.stdout.write(`${line}\n`);
+}
 
-  for (const entry of entries) {
-    if (skipDirs.has(entry.name)) {
-      continue;
-    }
+function isInsideSkippedDir(relativePath) {
+  return relativePath.split(path.sep).some((segment) => skipDirs.has(segment));
+}
 
-    const fullPath = path.join(dir, entry.name);
+async function listTrackedFiles(rootDir) {
+  const { stdout } = await execFileAsync("git", ["-C", rootDir, "ls-files", "-z"]);
+  const trackedPaths = stdout.split("\0").filter(Boolean);
 
-    if (entry.isDirectory()) {
-      await walk(fullPath, found);
-      continue;
-    }
-
-    if (entry.isFile() && trackedFileNames.has(entry.name)) {
-      found.push(fullPath);
-    }
-  }
-
-  return found;
+  return trackedPaths
+    .filter((relativePath) => trackedFileNames.has(path.basename(relativePath)))
+    .filter((relativePath) => !isInsideSkippedDir(relativePath))
+    .map((relativePath) => path.join(rootDir, relativePath));
 }
 
 function collectLatestValues(value, currentPath = "$", findings = []) {
@@ -71,9 +70,9 @@ function collectLatestValues(value, currentPath = "$", findings = []) {
   }
 
   if (Array.isArray(value)) {
-    value.forEach((entry, index) => {
-      collectLatestValues(entry, `${currentPath}[${index}]`, findings);
-    });
+    value.forEach((entry, index) =>
+      collectLatestValues(entry, `${currentPath}[${index}]`, findings),
+    );
     return findings;
   }
 
@@ -130,6 +129,10 @@ async function scanPnpmLockfile(filePath) {
 
 async function scanTextLockfile(filePath, pattern) {
   const raw = await fs.readFile(filePath, "utf8");
+  return scanTextContent(raw, pattern);
+}
+
+function scanTextContent(raw, pattern) {
   const findings = [];
   const lines = raw.split("\n");
 
@@ -143,14 +146,18 @@ async function scanTextLockfile(filePath, pattern) {
 }
 
 async function scanBinaryLockfile(filePath) {
-  const raw = await fs.readFile(filePath);
-  const index = raw.indexOf(Buffer.from("latest"));
+  try {
+    const { stdout } = await execFileAsync("bun", [filePath]);
+    return scanTextContent(stdout, textLockfilePattern);
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      throw new Error(
+        "Unable to inspect bun.lockb because `bun` is not installed. Install Bun or convert the lockfile to text format before rerunning this check.",
+      );
+    }
 
-  if (index === -1) {
-    return [];
+    throw error;
   }
-
-  return [`byte ${index}`];
 }
 
 async function scanFile(filePath) {
@@ -169,7 +176,7 @@ async function scanFile(filePath) {
   }
 
   if (baseName === "yarn.lock" || baseName === "bun.lock") {
-    return scanTextLockfile(filePath, /@latest(?=[:\s,"'])|"latest"/);
+    return scanTextLockfile(filePath, textLockfilePattern);
   }
 
   if (baseName === "bun.lockb") {
@@ -179,7 +186,7 @@ async function scanFile(filePath) {
   return [];
 }
 
-const files = await walk(rootDir);
+const files = await listTrackedFiles(rootDir);
 const failures = [];
 
 for (const filePath of files) {
@@ -190,7 +197,7 @@ for (const filePath of files) {
 }
 
 if (failures.length === 0) {
-  console.log("No latest specifiers found in tracked package manifests or lockfiles.");
+  writeStdout("No latest specifiers found in tracked package manifests or lockfiles.");
   process.exit(0);
 }
 

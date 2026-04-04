@@ -63,6 +63,10 @@ const preserveValues = new Set([
   "rc",
 ]);
 
+function writeStdout(line) {
+  process.stdout.write(`${line}\n`);
+}
+
 async function walk(dir, found = []) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
 
@@ -125,7 +129,9 @@ async function resolveInstalledVersion(packageName, manifestDir) {
       ) {
         return parsed.version;
       }
-    } catch {}
+    } catch {
+      continue;
+    }
   }
 
   return null;
@@ -214,17 +220,17 @@ for (const manifestPath of manifests) {
 }
 
 if (results.length === 0) {
-  console.log("No exact semver dependency ranges or latest tags found.");
+  writeStdout("No exact semver dependency ranges or latest tags found.");
   process.exit(0);
 }
 
 for (const result of results) {
-  console.log(result.filePath);
+  writeStdout(result.filePath);
   for (const update of result.updates) {
-    console.log(`  ${update}`);
+    writeStdout(`  ${update}`);
   }
   for (const entry of result.unresolvedLatest) {
-    console.log(`  unresolved latest: ${entry}`);
+    writeStdout(`  unresolved latest: ${entry}`);
   }
 }
 
