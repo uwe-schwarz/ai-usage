@@ -49,9 +49,11 @@ Use this repo-local skill when the user wants the full dependency-upgrade flow e
 
 - After the PR is created, use the [@github](plugin://github@openai-curated) plugin for PR metadata and comment inspection.
 - Wait about 5 to 8 minutes before the first triage pass so bot reviews can land.
+- Do not merge during that waiting window, even if GitHub reports the PR as mergeable.
 - Inspect both:
   - formal reviews and review threads
   - top-level PR conversation, including bot comments and status summaries
+- Treat bot-review placeholders and pending status checks as "review still in progress", not as a clean triage result.
 - If there is actionable feedback:
   1. Cluster it by behavior or file.
   2. Address the requested changes locally.
@@ -61,13 +63,16 @@ Use this repo-local skill when the user wants the full dependency-upgrade flow e
   6. Resolve the review comments when they got resolved.
 - If review-thread state matters, follow the thread-aware approach from the GitHub plugin skill at `$HOME/.codex/plugins/cache/openai-curated/github/*/skills/gh-address-comments/SKILL.md` (use globbing).
 - Repeat the babysitting loop until:
+  - the initial 5 to 8 minute wait has elapsed and at least one real triage pass has been completed after that wait,
   - there is no unresolved actionable feedback,
+  - no bot review or status context that could still produce review feedback is still pending,
   - required reviews are satisfied,
   - and the PR is mergeable.
 
 ## Merge And Cleanup
 
 - Merge the PR once it is unblocked. Prefer `gh pr merge --squash --delete-branch` unless the repo convention clearly prefers another merge strategy.
+- "Unblocked" here requires the post-wait triage above; mergeability alone is never sufficient.
 - If GitHub checks never start because the backing workflow is no longer running or no longer exists, treat that as acceptable for this repo unless the user explicitly asked for green CI before merge.
 - After merge:
   - `git checkout main`
