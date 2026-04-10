@@ -29,7 +29,7 @@ Use this repo-local skill when the user wants the full dependency-upgrade flow e
 ## Execution Order
 
 1. Inventory the repo exactly as the base skill requires.
-2. Create a fresh branch before editing. Prefer `codex/deps-backup-stripe-<yyyymmdd>`.
+2. Create a fresh branch before editing. Prefer `codex/deps-ai-usage-<yyyymmdd>`.
 3. Upgrade dependencies with Bun and regenerate the lockfile as needed.
 4. Run the base skill’s release-note triage and apply required fallout fixes.
 5. Run the repo validation set.
