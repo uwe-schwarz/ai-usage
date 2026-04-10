@@ -70,9 +70,9 @@ function collectLatestValues(value, currentPath = "$", findings = []) {
   }
 
   if (Array.isArray(value)) {
-    value.forEach((entry, index) =>
-      collectLatestValues(entry, `${currentPath}[${index}]`, findings),
-    );
+    for (const [index, entry] of value.entries()) {
+      collectLatestValues(entry, `${currentPath}[${index}]`, findings);
+    }
     return findings;
   }
 

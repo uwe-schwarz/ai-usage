@@ -129,9 +129,7 @@ async function resolveInstalledVersion(packageName, manifestDir) {
       ) {
         return parsed.version;
       }
-    } catch {
-      continue;
-    }
+    } catch {}
   }
 
   return null;
