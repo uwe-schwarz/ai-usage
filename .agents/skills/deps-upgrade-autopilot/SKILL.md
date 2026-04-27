@@ -79,6 +79,8 @@ Use this repo-local skill when the user wants the full dependency-upgrade flow e
   - `git pull --ff-only`
   - delete the local branch if it still exists
   - delete the remote branch if the merge command did not already remove it
+  - `git fetch --prune origin`
+  - verify `git branch -r` no longer lists the merged dependency branch before reporting cleanup complete
 - Report the merged PR URL and the final commit on `main`.
 
 ## Daily Automation Bias
