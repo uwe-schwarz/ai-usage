@@ -1,5 +1,8 @@
 # AI Usage Monitor
 
+> [!WARNING]
+> This project is archived and will not be developed further. It should still work for its current use cases, but the AI tooling landscape has moved quickly enough that this monitor is now effectively outdated.
+
 Monitor AI provider usage limits from opencode config.
 
 ## Usage
